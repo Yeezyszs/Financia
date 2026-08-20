@@ -16,7 +16,12 @@ export type TransactionStatus = 'pendente' | 'categorizada' | 'conciliada';
  */
 export type TransactionKind = 'purchase' | 'refund';
 
-export type TransactionOrigin = 'email' | 'manual';
+/**
+ * email     -> aviso de compra recebido por e-mail (valor provisorio)
+ * statement -> linha de extrato/fatura importada (valor final, autoritativo)
+ * manual    -> lancado a mao pelo usuario
+ */
+export type TransactionOrigin = 'email' | 'statement' | 'manual';
 
 export interface TransactionProps {
   id: string;

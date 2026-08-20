@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { buildContainer } from '@/src/infrastructure/config/container';
 import { env } from '@/src/infrastructure/config/env';
 import { Money } from '@/src/domain/entities/Money';
@@ -29,8 +30,12 @@ export default async function HomePage() {
     <main>
       <header>
         <h1>Financia</h1>
-        <p>Ultimas {items.length} transacoes, ingeridas automaticamente do e-mail.</p>
+        <p>Ultimas {items.length} transacoes.</p>
       </header>
+
+      <p className="toolbar">
+        <Link href="/import">Importar extrato (CSV) &rarr;</Link>
+      </p>
 
       <dl className="summary">
         <div>
@@ -49,8 +54,8 @@ export default async function HomePage() {
 
       {items.length === 0 ? (
         <p className="empty">
-          Nenhuma transacao ainda. Cadastre uma fonte em <code>email_sources</code> e rode{' '}
-          <code>GET /api/sync?days=90</code> para trazer o historico.
+          Nenhuma transacao ainda. <Link href="/import">Importe um extrato em CSV</Link> para
+          comecar.
         </p>
       ) : (
         groupByDay(items).map(([day, dayItems]) => (

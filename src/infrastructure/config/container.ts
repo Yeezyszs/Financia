@@ -6,12 +6,15 @@ import { RecategorizeTransaction } from '../../application/use-cases/Recategoriz
 import { RegisterAccount } from '../../application/use-cases/RegisterAccount';
 import { SyncTransactionsFromEmail } from '../../application/use-cases/SyncTransactionsFromEmail';
 import { IngestFromGmailNotification } from '../../application/use-cases/IngestFromGmailNotification';
+import { ImportStatementFile } from '../../application/use-cases/ImportStatementFile';
 import { cryptoIdGenerator } from '../../application/ports/IdGenerator';
 import { GmailClient } from '../gateways/email/GmailClient';
 import { GoogleOAuthTokenProvider } from '../gateways/email/GoogleOAuthTokenProvider';
 import { InMemoryParserRegistry } from '../gateways/email/InMemoryParserRegistry';
 import { C6EmailParser } from '../gateways/email/parsers/C6EmailParser';
 import { NubankEmailParser } from '../gateways/email/parsers/NubankEmailParser';
+import { ConfidenceParserRegistry } from '../gateways/statement/StatementParserRegistry';
+import { NubankCardStatementParser } from '../gateways/statement/parsers/NubankCardStatementParser';
 import { SupabaseAccountRepository } from '../repositories/SupabaseAccountRepository';
 import { SupabaseCategoryRepository } from '../repositories/SupabaseCategoryRepository';
 import { SupabaseEmailSourceRepository } from '../repositories/SupabaseEmailSourceRepository';
@@ -46,6 +49,10 @@ export function buildContainer() {
 
   const parsers = new InMemoryParserRegistry([new NubankEmailParser(), new C6EmailParser()]);
 
+  // Extrato nao chega rotulado como o e-mail chega: o formato e reconhecido
+  // pelo cabecalho. Sem parser dedicado que case, o generico assume.
+  const statementParsers = new ConfidenceParserRegistry([new NubankCardStatementParser()]);
+
   const categorize = new CategorizeTransaction(categories);
   const ingest = new IngestTransactionFromEmail(parsers, transactions, categorize, cryptoIdGenerator);
 
@@ -61,6 +68,7 @@ export function buildContainer() {
       listTransactions: new ListTransactions(transactions),
       recategorize: new RecategorizeTransaction(transactions, categories),
       registerAccount: new RegisterAccount(accounts, cryptoIdGenerator),
+      importStatement: new ImportStatementFile(statementParsers, transactions, accounts, categorize, cryptoIdGenerator),
     },
   };
 }

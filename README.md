@@ -3,6 +3,14 @@
 Controle financeiro pessoal que ingere transacoes automaticamente a partir dos
 e-mails de notificacao de compra do banco. Sem lancamento manual.
 
+> **Nota de rota (ago/2026):** o `explore` confirmou que **nem Nubank nem C6
+> enviam e-mail por transacao** — compra e notificada por push no app. A
+> ingestao por e-mail continua no codigo e funcional, mas a fonte principal
+> passou a ser **importacao de CSV da fatura**, que alem de ser a unica
+> disponivel e mais completa: traz parcelas, IOF e valor final apos conversao,
+> que o aviso de compra nunca teve. Captura de push foi descartada porque o
+> iOS nao expoe notificacao entre apps.
+
 **Status:** Fase 1 completa. Dominio, use cases, schema, integracao com o
 Gmail, repositorios Supabase, ingestao por push (Pub/Sub) e uma UI minima de
 listagem e correcao de categoria. Os parsers de Nubank e C6 existem mas ainda
@@ -48,6 +56,7 @@ src/
       EmailGateway.ts / GmailPushGateway.ts
       repositories.ts
     use-cases/
+      ImportStatementFile.ts           CSV de fatura -> transacoes (fonte principal)
       IngestTransactionFromEmail.ts    e-mail -> transacao persistida
       IngestFromGmailNotification.ts   caminho do push (historyId incremental)
       SyncTransactionsFromEmail.ts     caminho da busca (cron / backfill)
@@ -56,12 +65,14 @@ src/
       ListTransactions.ts / RegisterAccount.ts
 
   infrastructure/             implementa os ports
+    gateways/statement/       leitor de CSV, deteccao de colunas e parsers de extrato
     gateways/email/           GmailClient, OAuth, registry e um parser por banco
     repositories/             implementacoes Supabase + mapeamento linha<->entidade
     config/                   env validado e a composition root
 
 app/                          Next.js: UI e endpoints
   page.tsx                    lista + correcao de categoria
+  import/                     upload de CSV de fatura
   api/gmail/webhook/          push do Pub/Sub
   api/sync/                   cron, backfill e renovacao do watch
 
@@ -93,6 +104,8 @@ Nenhum arquivo em `domain/` ou `use-cases/` muda.
 | Entidades imutaveis (`categorizedAs()` devolve nova instancia) | Estado mudando no meio de um fluxo assincrono e fonte de bug dificil. |
 | RLS ligada desde a migration 1 | Ligar depois obriga a reauditar cada query ja escrita. |
 | Regra mais longa vence | `UBER EATS` (Alimentacao) precisa ganhar de `UBER` (Transporte). |
+| Identidade de linha de CSV derivada do dado, com contador de ocorrencia | CSV nao tem `messageId`. Duas compras iguais no mesmo dia sao legitimas; sem o contador, uma delas sumiria. |
+| Deteccao de colunas em vez de um parser por banco | Extrato e autodescritivo. Parser dedicado so quando o formato tem particularidade real. |
 | `fetch` puro em vez de `googleapis` | O pacote pesa ~50MB e isso conta no cold start de serverless. |
 
 ## Rodando
@@ -110,10 +123,10 @@ Configuracao completa — Supabase, OAuth, Pub/Sub, Vercel — em
 
 ## Proximos passos
 
-- [ ] **Validar os parsers** — `npm run explore`, ajustar os regex com e-mail
-      real em maos e trocar os fixtures sinteticos por reais anonimizados
-- [ ] Confirmar se o Nubank manda e-mail de compra; se nao, avaliar import de
-      CSV da fatura como fonte alternativa
+- [ ] **Validar o importador com CSV real** de Nubank e C6, e trocar os
+      fixtures sinteticos por reais anonimizados
+- [ ] Reconciliacao: quando o extrato confirmar uma transacao provisoria,
+      corrigir o valor final e marcar `conciliada`
 - [ ] Autenticacao de verdade (hoje o owner vem de `DEFAULT_OWNER_ID`) —
       entra junto com o acesso do Arthur
 - [ ] Filtros na listagem: por conta, categoria e periodo

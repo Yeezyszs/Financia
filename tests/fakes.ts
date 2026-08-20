@@ -1,7 +1,8 @@
+import { Account } from '../src/domain/entities/Account';
 import { Category, type CategoryRule } from '../src/domain/entities/Category';
 import type { Transaction } from '../src/domain/entities/Transaction';
 import type { IdGenerator } from '../src/application/ports/IdGenerator';
-import type { CategoryRepository, TransactionFilter, TransactionRepository } from '../src/application/ports/repositories';
+import type { AccountRepository, CategoryRepository, TransactionFilter, TransactionRepository } from '../src/application/ports/repositories';
 
 export class FakeTransactionRepository implements TransactionRepository {
   readonly rows: Transaction[] = [];
@@ -71,4 +72,25 @@ export function category(id: string, name: string, matches: string[], ownerId = 
     name,
     rules: matches.map((match) => ({ match, learned: false })),
   });
+}
+
+export class FakeAccountRepository implements AccountRepository {
+  constructor(private readonly rows: Account[] = []) {}
+
+  async create(account: Account): Promise<Account> {
+    this.rows.push(account);
+    return account;
+  }
+
+  async findById(id: string): Promise<Account | null> {
+    return this.rows.find((a) => a.id === id) ?? null;
+  }
+
+  async listByOwner(ownerId: string): Promise<Account[]> {
+    return this.rows.filter((a) => a.ownerId === ownerId);
+  }
+}
+
+export function account(id: string, ownerId = 'pedro'): Account {
+  return new Account({ id, ownerId, name: 'Cartao', institution: 'Nubank', type: 'cartao_credito' });
 }
