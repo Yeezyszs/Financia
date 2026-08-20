@@ -1,4 +1,4 @@
-import { DomainError } from '../errors/DomainError.js';
+import { DomainError } from '../errors/DomainError';
 
 export interface CategoryRule {
   /** Trecho procurado no nome do estabelecimento, ja normalizado (upper, sem acento). */

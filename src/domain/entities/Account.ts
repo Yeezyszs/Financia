@@ -1,4 +1,4 @@
-import { DomainError } from '../errors/DomainError.js';
+import { DomainError } from '../errors/DomainError';
 
 export type AccountType = 'conta_corrente' | 'cartao_credito';
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { CategorizeTransaction } from '../../src/application/use-cases/CategorizeTransaction.js';
-import { Category } from '../../src/domain/entities/Category.js';
-import { FakeCategoryRepository, category } from '../fakes.js';
+import { CategorizeTransaction } from '../../src/application/use-cases/CategorizeTransaction';
+import { Category } from '../../src/domain/entities/Category';
+import { FakeCategoryRepository, category } from '../fakes';
 
 const fallback = new Category({ id: 'cat-0', ownerId: 'pedro', name: 'Nao categorizado' });
 

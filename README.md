@@ -3,19 +3,38 @@
 Controle financeiro pessoal que ingere transacoes automaticamente a partir dos
 e-mails de notificacao de compra do banco. Sem lancamento manual.
 
-**Status:** Fase 1 (fundacao) — dominio, use cases e schema prontos e testados.
-Ainda nao ha integracao real com o Gmail nem parser de banco.
+**Status:** Fase 1 completa. Dominio, use cases, schema, integracao com o
+Gmail, repositorios Supabase, ingestao por push (Pub/Sub) e uma UI minima de
+listagem e correcao de categoria. Os parsers de Nubank e C6 existem mas ainda
+**precisam ser validados contra e-mail real** — veja [SETUP.md](./SETUP.md).
 
 ## Por que e-mail e nao Open Finance
 
 Agregador (Pluggy/Belvo) custa a partir de R$2.500/mes — inviavel para uso
 pessoal. Os bancos ja mandam os dados de graca, no e-mail de "compra aprovada".
 
+## Como funciona
+
+```
+Gmail  --push-->  Pub/Sub  -->  POST /api/gmail/webhook
+                                      |
+                    IngestFromGmailNotification
+                     (pergunta ao Gmail o que mudou desde o ultimo historyId)
+                                      |
+                    para cada e-mail: roteia pelo remetente -> EmailSource
+                                      |
+                    IngestTransactionFromEmail
+                     parser da instituicao -> categorizacao -> Supabase
+```
+
+O cron diario (`/api/sync`) e a rede de seguranca: pega o que o push tiver
+perdido e renova o watch do Gmail, que o Google expira a cada 7 dias.
+
 ## Arquitetura
 
 Clean Architecture. A regra unica que sustenta tudo: **a dependencia so aponta
 para dentro**. `domain/` nao importa nada; `application/` importa `domain/`;
-`infrastructure/` e `presentation/` importam os dois.
+`infrastructure/` e `app/` importam os dois.
 
 ```
 src/
@@ -26,27 +45,29 @@ src/
   application/                importa so domain/
     ports/                    as interfaces que o mundo de fora precisa cumprir
       EmailParser.ts          <- a peca-chave (ver abaixo)
-      EmailGateway.ts
+      EmailGateway.ts / GmailPushGateway.ts
       repositories.ts
     use-cases/
       IngestTransactionFromEmail.ts    e-mail -> transacao persistida
-      SyncTransactionsFromEmail.ts     varre as fontes e chama a ingestao
+      IngestFromGmailNotification.ts   caminho do push (historyId incremental)
+      SyncTransactionsFromEmail.ts     caminho da busca (cron / backfill)
       CategorizeTransaction.ts         regras deterministicas + fallback
       RecategorizeTransaction.ts       correcao manual que vira regra nova
-      ListTransactions.ts
-      RegisterAccount.ts
+      ListTransactions.ts / RegisterAccount.ts
 
   infrastructure/             implementa os ports
-    gateways/email/           GmailClient + um parser por instituicao
-    repositories/             implementacoes Supabase
-    config/
+    gateways/email/           GmailClient, OAuth, registry e um parser por banco
+    repositories/             implementacoes Supabase + mapeamento linha<->entidade
+    config/                   env validado e a composition root
 
-  presentation/               entrypoints
-    http/                     endpoints de consulta e webhook do Pub/Sub
-    jobs/                     sync agendado
+app/                          Next.js: UI e endpoints
+  page.tsx                    lista + correcao de categoria
+  api/gmail/webhook/          push do Pub/Sub
+  api/sync/                   cron, backfill e renovacao do watch
 
-supabase/migrations/          schema + seed de categorias
-tests/                        unit (dominio e use cases, sem I/O)
+scripts/                      gmail:auth, gmail:watch, explore
+supabase/migrations/          schema, seed de categorias, estado do sync
+tests/unit/                   dominio, use cases e parsers - sem I/O
 ```
 
 ### O ponto que faz a coisa toda valer a pena
@@ -54,7 +75,8 @@ tests/                        unit (dominio e use cases, sem I/O)
 `IngestTransactionFromEmail` **nao sabe qual banco mandou o e-mail**. Ele pede
 um parser ao registry usando `EmailSource.parserStrategy` e trabalha contra a
 interface `EmailParser`. Consequencia pratica: adicionar um banco novo e
-escrever um arquivo em `parsers/` e cadastrar uma linha em `email_sources`.
+escrever um arquivo em `parsers/`, somar uma linha no
+`InMemoryParserRegistry` da composition root, e cadastrar a fonte no banco.
 Nenhum arquivo em `domain/` ou `use-cases/` muda.
 
 ## Decisoes ja tomadas (e o porque)
@@ -62,45 +84,39 @@ Nenhum arquivo em `domain/` ou `use-cases/` muda.
 | Decisao | Motivo |
 |---|---|
 | Dinheiro em centavos (`bigint`) | Float acumula erro: `0.1 + 0.2 !== 0.3`. Divide so na hora de exibir. |
-| Idempotencia via unique index em `(owner_id, raw_source_id)` | `SELECT` antes de `INSERT` nao segura dois jobs concorrentes (cron + webhook). O banco segura. |
+| Idempotencia via unique index em `(owner_id, raw_source_id)` | `SELECT` antes de `INSERT` nao segura cron e webhook concorrentes. O banco segura. |
+| Checkpoint do sync so avanca no fim | Se o processo morrer no meio, a proxima notificacao reprocessa a janela — e reprocessar e no-op. |
+| `historyId` em tabela propria, nao em `email_sources` | O historyId e da caixa inteira: uma notificacao cobre Nubank e C6 juntos. |
 | Estorno e transacao nova negativa, nunca `DELETE` | O historico do que aconteceu precisa sobreviver; o total liquido continua certo. |
 | Allowlist de remetente por fonte | Barra e-mail de phishing imitando o layout do banco. |
+| Data lida no fuso de Sao Paulo | Interpretar como UTC joga compra depois das 21h para o dia seguinte e erra a virada do mes. |
 | Entidades imutaveis (`categorizedAs()` devolve nova instancia) | Estado mudando no meio de um fluxo assincrono e fonte de bug dificil. |
 | RLS ligada desde a migration 1 | Ligar depois obriga a reauditar cada query ja escrita. |
 | Regra mais longa vence | `UBER EATS` (Alimentacao) precisa ganhar de `UBER` (Transporte). |
+| `fetch` puro em vez de `googleapis` | O pacote pesa ~50MB e isso conta no cold start de serverless. |
 
 ## Rodando
 
 ```bash
 npm install
-npm test          # 20 testes, nenhum precisa de banco ou rede
+npm test          # 30 testes, nenhum precisa de banco ou rede
 npm run typecheck
+npm run build
+npm run dev       # precisa do .env preenchido (veja SETUP.md)
 ```
 
-Ainda nao ha o que subir: sem Gmail configurado e sem parser, nao existe fluxo
-end-to-end. Isso e a Fase 2.
+Configuracao completa — Supabase, OAuth, Pub/Sub, Vercel — em
+**[SETUP.md](./SETUP.md)**.
 
 ## Proximos passos
 
-- [ ] **Fase 1 (resto)** — projeto no Google Cloud, OAuth2 com escopo
-      `gmail.readonly`, `GmailClient` implementando `EmailGateway`
-- [ ] **Modo exploracao** — script que dumpa os e-mails de banco reais da caixa,
-      para escrever o primeiro parser com dado na mao em vez de adivinhar
-- [ ] **Fase 2** — primeiro parser + ingestao end-to-end + repositorios Supabase
-- [ ] **Fase 3** — segundo parser (o teste real de que a arquitetura paga)
-- [ ] **Fase 4** — fluxo de correcao manual na UI
-- [ ] **Fase 5** — listagem, filtros e o front em React
-
-## Pendencias abertas
-
-- Qual banco digital exatamente (Inter, C6 ou BTG) entra junto com o Nubank
-- Onde roda o webhook do Pub/Sub — Vercel ou Supabase Edge Function
-- Nubank manda e-mail de compra? Por padrao ele notifica por push. A definir
-  no modo exploracao.
-
-## Alerta de configuracao: o refresh token de 7 dias
-
-App OAuth em modo **Testing** no Google Cloud tem refresh token que expira em
-7 dias. Publicar como "In production" resolve — funciona para a propria conta
-mesmo sem passar pela verificacao do Google, so mostra uma tela de aviso.
-Deixar em Testing significa reautenticar toda semana.
+- [ ] **Validar os parsers** — `npm run explore`, ajustar os regex com e-mail
+      real em maos e trocar os fixtures sinteticos por reais anonimizados
+- [ ] Confirmar se o Nubank manda e-mail de compra; se nao, avaliar import de
+      CSV da fatura como fonte alternativa
+- [ ] Autenticacao de verdade (hoje o owner vem de `DEFAULT_OWNER_ID`) —
+      entra junto com o acesso do Arthur
+- [ ] Filtros na listagem: por conta, categoria e periodo
+- [ ] Terceiro parser, para confirmar que a arquitetura de gateway isolado
+      realmente evita retrabalho
+- [ ] Dashboard e orcamento (fora do MVP por decisao do briefing)

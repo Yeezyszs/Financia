@@ -1,7 +1,7 @@
-import { normalizeMerchant } from '../../domain/entities/Category.js';
-import { DomainError } from '../../domain/errors/DomainError.js';
-import type { Transaction } from '../../domain/entities/Transaction.js';
-import type { CategoryRepository, TransactionRepository } from '../ports/repositories.js';
+import { normalizeMerchant } from '../../domain/entities/Category';
+import { DomainError } from '../../domain/errors/DomainError';
+import type { Transaction } from '../../domain/entities/Transaction';
+import type { CategoryRepository, TransactionRepository } from '../ports/repositories';
 
 /**
  * Correcao manual do usuario. O pulo do gato: alem de corrigir esta transacao,

@@ -1,4 +1,4 @@
-import type { RawEmail } from './EmailParser.js';
+import type { RawEmail } from './EmailParser';
 
 export interface EmailSearchQuery {
   /** Sintaxe da caixa de origem (no Gmail, a mesma da barra de busca). */

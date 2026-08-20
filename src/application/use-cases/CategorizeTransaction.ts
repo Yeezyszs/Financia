@@ -1,6 +1,6 @@
-import { normalizeMerchant } from '../../domain/entities/Category.js';
-import { DomainError } from '../../domain/errors/DomainError.js';
-import type { CategoryRepository } from '../ports/repositories.js';
+import { normalizeMerchant } from '../../domain/entities/Category';
+import { DomainError } from '../../domain/errors/DomainError';
+import type { CategoryRepository } from '../ports/repositories';
 
 /**
  * Resolve a categoria de um estabelecimento por regra deterministica.

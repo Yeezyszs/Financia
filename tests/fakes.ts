@@ -1,7 +1,7 @@
-import { Category, type CategoryRule } from '../src/domain/entities/Category.js';
-import type { Transaction } from '../src/domain/entities/Transaction.js';
-import type { IdGenerator } from '../src/application/ports/IdGenerator.js';
-import type { CategoryRepository, TransactionFilter, TransactionRepository } from '../src/application/ports/repositories.js';
+import { Category, type CategoryRule } from '../src/domain/entities/Category';
+import type { Transaction } from '../src/domain/entities/Transaction';
+import type { IdGenerator } from '../src/application/ports/IdGenerator';
+import type { CategoryRepository, TransactionFilter, TransactionRepository } from '../src/application/ports/repositories';
 
 export class FakeTransactionRepository implements TransactionRepository {
   readonly rows: Transaction[] = [];

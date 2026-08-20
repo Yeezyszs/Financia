@@ -2,23 +2,32 @@
   "name": "financia",
   "version": "0.1.0",
   "private": true,
-  "type": "module",
   "description": "Controle financeiro pessoal com ingestao automatica de transacoes via e-mail",
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "eslint src tests --ext .ts"
+    "explore": "tsx scripts/explore-emails.ts",
+    "gmail:auth": "tsx scripts/gmail-auth.ts",
+    "gmail:watch": "tsx scripts/gmail-watch.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.45.0",
+    "next": "^14.2.5",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "tsx": "^4.16.0",
     "typescript": "^5.5.0",
     "vitest": "^2.0.0"
   }

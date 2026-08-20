@@ -1,6 +1,6 @@
-import type { EmailGateway } from '../ports/EmailGateway.js';
-import type { EmailSourceRepository } from '../ports/repositories.js';
-import type { IngestOutcome, IngestTransactionFromEmail } from './IngestTransactionFromEmail.js';
+import type { EmailGateway } from '../ports/EmailGateway';
+import type { EmailSourceRepository } from '../ports/repositories';
+import type { IngestOutcome, IngestTransactionFromEmail } from './IngestTransactionFromEmail';
 
 export interface SyncReport {
   ingested: number;

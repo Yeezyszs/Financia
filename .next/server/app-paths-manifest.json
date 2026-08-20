@@ -1,0 +1,6 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/sync/route": "app/api/sync/route.js",
+  "/api/gmail/webhook/route": "app/api/gmail/webhook/route.js",
+  "/page": "app/page.js"
+}

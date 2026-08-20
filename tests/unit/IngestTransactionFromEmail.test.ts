@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { CategorizeTransaction } from '../../src/application/use-cases/CategorizeTransaction.js';
-import { IngestTransactionFromEmail } from '../../src/application/use-cases/IngestTransactionFromEmail.js';
-import { InMemoryParserRegistry } from '../../src/infrastructure/gateways/email/InMemoryParserRegistry.js';
-import { EmailSource } from '../../src/domain/entities/EmailSource.js';
-import { Money } from '../../src/domain/entities/Money.js';
-import { Category } from '../../src/domain/entities/Category.js';
-import type { EmailParser, RawEmail } from '../../src/application/ports/EmailParser.js';
-import { FakeCategoryRepository, FakeTransactionRepository, category, sequentialIds } from '../fakes.js';
+import { CategorizeTransaction } from '../../src/application/use-cases/CategorizeTransaction';
+import { IngestTransactionFromEmail } from '../../src/application/use-cases/IngestTransactionFromEmail';
+import { InMemoryParserRegistry } from '../../src/infrastructure/gateways/email/InMemoryParserRegistry';
+import { EmailSource } from '../../src/domain/entities/EmailSource';
+import { Money } from '../../src/domain/entities/Money';
+import { Category } from '../../src/domain/entities/Category';
+import type { EmailParser, RawEmail } from '../../src/application/ports/EmailParser';
+import { FakeCategoryRepository, FakeTransactionRepository, category, sequentialIds } from '../fakes';
 
 /** Parser de mentira: prova que o use case funciona sem depender de banco real. */
 const fakeParser: EmailParser = {

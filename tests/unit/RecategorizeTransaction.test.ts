@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { RecategorizeTransaction } from '../../src/application/use-cases/RecategorizeTransaction.js';
-import { CategorizeTransaction } from '../../src/application/use-cases/CategorizeTransaction.js';
-import { Category } from '../../src/domain/entities/Category.js';
-import { Money } from '../../src/domain/entities/Money.js';
-import { Transaction } from '../../src/domain/entities/Transaction.js';
-import { FakeCategoryRepository, FakeTransactionRepository, category } from '../fakes.js';
+import { RecategorizeTransaction } from '../../src/application/use-cases/RecategorizeTransaction';
+import { CategorizeTransaction } from '../../src/application/use-cases/CategorizeTransaction';
+import { Category } from '../../src/domain/entities/Category';
+import { Money } from '../../src/domain/entities/Money';
+import { Transaction } from '../../src/domain/entities/Transaction';
+import { FakeCategoryRepository, FakeTransactionRepository, category } from '../fakes';
 
 describe('RecategorizeTransaction', () => {
   it('corrige a transacao e aprende a regra para a proxima vez', async () => {

@@ -1,5 +1,5 @@
-import type { Money } from '../../domain/entities/Money.js';
-import type { TransactionKind } from '../../domain/entities/Transaction.js';
+import type { Money } from '../../domain/entities/Money';
+import type { TransactionKind } from '../../domain/entities/Transaction';
 
 /** E-mail cru, no formato que o gateway entrega. Sem nada especifico do Gmail. */
 export interface RawEmail {

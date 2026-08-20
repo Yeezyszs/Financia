@@ -1,6 +1,6 @@
-import { Account, type AccountType } from '../../domain/entities/Account.js';
-import type { IdGenerator } from '../ports/IdGenerator.js';
-import type { AccountRepository } from '../ports/repositories.js';
+import { Account, type AccountType } from '../../domain/entities/Account';
+import type { IdGenerator } from '../ports/IdGenerator';
+import type { AccountRepository } from '../ports/repositories';
 
 export class RegisterAccount {
   constructor(

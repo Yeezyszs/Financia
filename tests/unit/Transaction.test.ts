@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Money } from '../../src/domain/entities/Money.js';
-import { Transaction } from '../../src/domain/entities/Transaction.js';
+import { Money } from '../../src/domain/entities/Money';
+import { Transaction } from '../../src/domain/entities/Transaction';
 
 const base = {
   id: 't1',

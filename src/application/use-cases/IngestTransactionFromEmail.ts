@@ -1,9 +1,9 @@
-import { Transaction } from '../../domain/entities/Transaction.js';
-import type { EmailSource } from '../../domain/entities/EmailSource.js';
-import type { RawEmail, EmailParserRegistry } from '../ports/EmailParser.js';
-import type { IdGenerator } from '../ports/IdGenerator.js';
-import type { TransactionRepository } from '../ports/repositories.js';
-import type { CategorizeTransaction } from './CategorizeTransaction.js';
+import { Transaction } from '../../domain/entities/Transaction';
+import type { EmailSource } from '../../domain/entities/EmailSource';
+import type { RawEmail, EmailParserRegistry } from '../ports/EmailParser';
+import type { IdGenerator } from '../ports/IdGenerator';
+import type { TransactionRepository } from '../ports/repositories';
+import type { CategorizeTransaction } from './CategorizeTransaction';
 
 export type IngestOutcome =
   | { status: 'ingested'; transaction: Transaction }

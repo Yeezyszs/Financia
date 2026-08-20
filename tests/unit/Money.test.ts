@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Money } from '../../src/domain/entities/Money.js';
+import { Money } from '../../src/domain/entities/Money';
 
 describe('Money', () => {
   it('parseia os formatos que aparecem em e-mail de banco brasileiro', () => {

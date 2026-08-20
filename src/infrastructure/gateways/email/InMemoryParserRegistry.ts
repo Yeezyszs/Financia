@@ -1,4 +1,4 @@
-import type { EmailParser, EmailParserRegistry } from '../../../application/ports/EmailParser.js';
+import type { EmailParser, EmailParserRegistry } from '../../../application/ports/EmailParser';
 
 /**
  * Registry dos parsers. E o unico lugar que precisa mudar quando entra um

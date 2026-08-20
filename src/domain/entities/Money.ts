@@ -1,4 +1,4 @@
-import { DomainError } from '../errors/DomainError.js';
+import { DomainError } from '../errors/DomainError';
 
 /**
  * Dinheiro sempre em centavos (inteiro). Float com dinheiro acumula erro de

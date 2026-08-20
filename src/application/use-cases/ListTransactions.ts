@@ -1,5 +1,5 @@
-import type { Transaction } from '../../domain/entities/Transaction.js';
-import type { TransactionFilter, TransactionRepository } from '../ports/repositories.js';
+import type { Transaction } from '../../domain/entities/Transaction';
+import type { TransactionFilter, TransactionRepository } from '../ports/repositories';
 
 export interface TransactionListResult {
   items: Transaction[];

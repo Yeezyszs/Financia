@@ -1,7 +1,7 @@
-import type { Account } from '../../domain/entities/Account.js';
-import type { Category } from '../../domain/entities/Category.js';
-import type { EmailSource } from '../../domain/entities/EmailSource.js';
-import type { Transaction, TransactionStatus } from '../../domain/entities/Transaction.js';
+import type { Account } from '../../domain/entities/Account';
+import type { Category } from '../../domain/entities/Category';
+import type { EmailSource } from '../../domain/entities/EmailSource';
+import type { Transaction, TransactionStatus } from '../../domain/entities/Transaction';
 
 export interface TransactionFilter {
   ownerId: string;
@@ -44,4 +44,21 @@ export interface CategoryRepository {
 export interface EmailSourceRepository {
   listEnabled(ownerId: string): Promise<EmailSource[]>;
   findById(id: string): Promise<EmailSource | null>;
+}
+
+export interface GmailSyncState {
+  ownerId: string;
+  emailAddress: string;
+  historyId: string | null;
+  watchExpiresAt: Date | null;
+}
+
+/**
+ * Checkpoint do sync incremental. Fica separado de EmailSource porque o
+ * historyId e da caixa inteira: uma notificacao do Pub/Sub cobre todas as
+ * fontes de uma vez.
+ */
+export interface GmailSyncStateRepository {
+  get(ownerId: string): Promise<GmailSyncState | null>;
+  save(state: GmailSyncState): Promise<void>;
 }

@@ -1,5 +1,5 @@
-import { DomainError } from '../errors/DomainError.js';
-import type { Money } from './Money.js';
+import { DomainError } from '../errors/DomainError';
+import type { Money } from './Money';
 
 /**
  * pendente     -> ingerida, ainda sem categoria resolvida

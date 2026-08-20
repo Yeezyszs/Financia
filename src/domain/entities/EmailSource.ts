@@ -1,4 +1,4 @@
-import { DomainError } from '../errors/DomainError.js';
+import { DomainError } from '../errors/DomainError';
 
 export interface EmailSourceProps {
   id: string;
