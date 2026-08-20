@@ -13,12 +13,30 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import { GmailClient } from '../src/infrastructure/gateways/email/GmailClient';
 import { GoogleOAuthTokenProvider } from '../src/infrastructure/gateways/email/GoogleOAuthTokenProvider';
-import { env } from '../src/infrastructure/config/env';
+import { env, loadDotEnv } from '../src/infrastructure/config/env';
 
-const BANK_TERMS = [
-  'nubank', 'c6bank', 'c6 bank', 'itau', 'bradesco', 'santander', 'inter',
-  'btg', 'caixa', 'banco do brasil', 'will bank', 'neon', 'original',
+/**
+ * Dominio e melhor que nome: `from:c6 bank` quebra a sintaxe do Gmail (o que
+ * vem depois do espaco vira busca solta) e `from:inter` casaria com qualquer
+ * remetente que contenha "inter", tipo "internacional".
+ */
+const BANK_DOMAINS = [
+  'nubank.com.br',
+  'c6bank.com.br',
+  'bancointer.com.br',
+  'itau.com.br',
+  'bradesco.com.br',
+  'santander.com.br',
+  'btgpactual.com',
+  'bb.com.br',
+  'caixa.gov.br',
+  'willbank.com.br',
+  'neon.com.br',
+  'original.com.br',
+  'xpi.com.br',
 ];
+
+loadDotEnv();
 
 async function main(): Promise<void> {
   const gmail = new GmailClient(
@@ -36,7 +54,7 @@ async function main(): Promise<void> {
   const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
   const query = dumpFilter
     ? `from:${dumpFilter}`
-    : BANK_TERMS.map((term) => `from:${term}`).join(' OR ');
+    : BANK_DOMAINS.map((domain) => `from:${domain}`).join(' OR ');
 
   console.log(`Buscando: ${query}\nDesde: ${since.toLocaleDateString('pt-BR')}\n`);
   const emails = await gmail.search({ query, after: since, maxResults: dumpFilter ? 30 : 100 });
@@ -45,7 +63,7 @@ async function main(): Promise<void> {
     console.log('Nenhum e-mail encontrado. Possiveis motivos:');
     console.log('  - o banco notifica so por push (caso comum do Nubank)');
     console.log('  - a notificacao por e-mail esta desligada no app do banco');
-    console.log('  - o remetente usa um dominio que nao esta em BANK_TERMS');
+    console.log('  - o remetente usa um dominio fora da lista BANK_DOMAINS do script');
     return;
   }
 

@@ -1,5 +1,17 @@
 # Setup
 
+> **Rode tudo isto na sua maquina, nao num ambiente remoto.** O
+> `npm run gmail:auth` abre um servidor em `localhost:3000` para receber o
+> callback do Google, e o `npm run explore` le a sua caixa de e-mail.
+
+```bash
+git clone https://github.com/Yeezyszs/Financia.git
+cd Financia
+git checkout claude/personal-finance-app-bwn012
+npm install
+cp .env.example .env
+```
+
 Ordem importa: o Supabase precisa existir antes do deploy, e o deploy precisa
 existir antes do Pub/Sub (que exige uma URL publica para o push).
 

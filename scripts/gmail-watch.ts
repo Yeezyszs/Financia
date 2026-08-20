@@ -14,7 +14,9 @@
  */
 import { GmailClient } from '../src/infrastructure/gateways/email/GmailClient';
 import { GoogleOAuthTokenProvider } from '../src/infrastructure/gateways/email/GoogleOAuthTokenProvider';
-import { env } from '../src/infrastructure/config/env';
+import { env, loadDotEnv } from '../src/infrastructure/config/env';
+
+loadDotEnv();
 
 async function main(): Promise<void> {
   const gmail = new GmailClient(

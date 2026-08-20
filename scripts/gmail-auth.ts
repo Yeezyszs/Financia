@@ -15,6 +15,9 @@
  * para a propria conta - so mostra uma tela de aviso no consentimento.
  */
 import { createServer } from 'node:http';
+import { loadDotEnv } from '../src/infrastructure/config/env';
+
+loadDotEnv();
 
 const SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI ?? 'http://localhost:3000/oauth/callback';
