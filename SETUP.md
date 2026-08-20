@@ -21,35 +21,45 @@ existir antes do Pub/Sub (que exige uma URL publica para o push).
 
 1. Criar projeto em [supabase.com](https://supabase.com).
 2. Rodar as migrations em ordem, no SQL Editor:
-   - `supabase/migrations/0001_init.sql`
-   - `supabase/migrations/0002_seed_categories.sql`
-   - `supabase/migrations/0003_gmail_sync_state.sql`
-3. Criar seu usuario em **Authentication > Users > Add user**. Anote o UUID:
-   e o `DEFAULT_OWNER_ID`.
-4. Semear as categorias padrao:
+   `0001_init` → `0002_seed_categories` → `0003_gmail_sync_state` →
+   `0004_statement_origin` → `0005_restrict_seed_function`.
+3. Criar o usuario em **Authentication > Users > Add user**. Use um e-mail e
+   senha reais — o UUID gerado ai e o `DEFAULT_OWNER_ID`.
+
+   > Nao insira direto em `auth.users` por SQL. A tabela tem colunas e
+   > invariantes que o GoTrue espera; um registro montado a mao costuma
+   > funcionar ate a primeira tentativa de login.
+
+4. Semear as categorias padrao (SQL Editor roda como service role, entao a
+   funcao restrita da migration 0005 e acessivel ai):
    ```sql
    select seed_default_categories('<seu-uuid>');
    ```
-5. Cadastrar as contas e as fontes de e-mail:
+5. Cadastrar as contas:
    ```sql
    insert into accounts (owner_id, name, institution, type, last4) values
      ('<seu-uuid>', 'Nubank', 'Nubank', 'cartao_credito', '1234'),
      ('<seu-uuid>', 'C6',     'C6 Bank', 'cartao_credito', '5678');
-
-   insert into email_sources (owner_id, account_id, institution, parser_strategy, from_addresses)
-   select '<seu-uuid>', id, institution,
-          case institution when 'Nubank' then 'nubank' else 'c6' end,
-          case institution when 'Nubank' then array['nubank.com.br']
-                                         else array['c6bank.com.br'] end
-   from accounts where owner_id = '<seu-uuid>';
    ```
+6. Depois de qualquer DDL, rodar o linter em **Advisors > Security**. Ele pega
+   coisas que passam despercebidas — foi assim que a exposicao da
+   `seed_default_categories` via RPC apareceu.
 
-`SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` saem de **Settings > API**.
+### As duas chaves
 
-> A service role key ignora RLS. Ela existe porque o job de ingestao roda sem
-> usuario logado. Backend apenas — nunca no front.
+**Settings > API** traz duas, e a diferenca importa:
 
----
+| Chave | O que faz | Onde usar |
+|---|---|---|
+| `anon` | respeita RLS | front, browser. Publica por design. |
+| `service_role` | **ignora RLS** | so backend. E o `SUPABASE_SERVICE_ROLE_KEY`. |
+
+O job de importacao roda sem usuario logado, por isso precisa da
+`service_role`: com a `anon`, toda query voltaria vazia. Em compensacao ela
+tem acesso total ao banco — nunca no front, nunca commitada, nunca colada em
+chat.
+
+`SUPABASE_URL` e a "Project URL" na mesma tela.
 
 ## 2. Google Cloud + OAuth
 
