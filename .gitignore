@@ -13,3 +13,7 @@ coverage/
 
 # Dump de e-mails reais do modo exploracao. Dados financeiros: NUNCA commitar.
 .explore/
+
+# Credencial OAuth baixada do Google Cloud Console e token gerado por ela.
+credentials.json
+token.json

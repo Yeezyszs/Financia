@@ -15,7 +15,8 @@
     "test:watch": "vitest",
     "explore": "tsx scripts/explore-emails.ts",
     "gmail:auth": "tsx scripts/gmail-auth.ts",
-    "gmail:watch": "tsx scripts/gmail-watch.ts"
+    "gmail:watch": "tsx scripts/gmail-watch.ts",
+    "authorize": "tsx scripts/gmail-auth.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

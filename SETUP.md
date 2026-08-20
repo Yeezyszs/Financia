@@ -55,23 +55,59 @@ existir antes do Pub/Sub (que exige uma URL publica para o push).
 
 1. Criar projeto no [Google Cloud Console](https://console.cloud.google.com).
 2. **APIs & Services > Library**: habilitar a **Gmail API**.
-3. **OAuth consent screen**: tipo *External*, seu e-mail como usuario de teste.
-4. **Credentials > Create credentials > OAuth client ID**, tipo *Web
-   application*, com `http://localhost:3000/oauth/callback` nos redirect URIs.
-5. Preencher `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` no `.env`, e rodar:
+3. **OAuth consent screen**: tipo *External* (ou *Internal*, se a conta for
+   Workspace). Nome do app, e-mail de contato, e seu proprio e-mail em
+   *Test users*.
+4. **Credentials > Create credentials > OAuth client ID**. Os dois tipos
+   funcionam, escolha um:
+
+   | Tipo | Redirect URI a cadastrar | Quando preferir |
+   |---|---|---|
+   | **App para computador** (Desktop) | nenhuma — o Google ja aceita `http://localhost` | Mais simples. O JSON baixado ja traz tudo. |
+   | **Aplicativo da Web** | `http://localhost:3000/oauth/callback` | Se voce quiser controlar o URI exato. |
+
+5. Entregue a credencial ao script de um destes dois jeitos:
+
+   **a) Arquivo** — baixe o JSON no Cloud Console e salve como
+   `credentials.json` na raiz do projeto. O script le tanto o formato
+   `installed` (desktop) quanto `web`. Ja esta no `.gitignore`.
+
+   **b) `.env`** — copie `client_id` e `client_secret` para
+   `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET`.
+
+   Se os dois existirem, `credentials.json` ganha. O caminho (b) e o que roda
+   em producao, onde nao ha disco para guardar arquivo.
+
+6. Autorizar:
    ```bash
-   npm run gmail:auth
+   npm run gmail:auth      # ou: npm run authorize
    ```
-   Autorize no navegador e cole o `GOOGLE_REFRESH_TOKEN` que o script imprime.
+   Ele imprime uma URL, voce autoriza no navegador, e o refresh token e
+   **gravado direto no `.env`** — sem copy-paste, que num token de 100+
+   caracteres e um jeito facil de truncar e depois caçar um erro obscuro.
 
 ### Publique o app antes de esquecer disso
 
 Em **OAuth consent screen**, clique em **Publish app** (status *In production*).
 
-Em modo *Testing* o Google **expira o refresh token em 7 dias** e a ingestao
-para de funcionar sozinha, sem erro visivel ate voce ir olhar. Publicar sem
-passar pela verificacao do Google funciona normalmente para a propria conta —
-so aparece uma tela de aviso na hora do consentimento.
+Em modo *Testing* o Google **expira o refresh token em 7 dias**. Nao e a regra
+geral de 6 meses de inatividade que vale para apps publicados — sao 7 dias
+corridos, use voce ou nao. A ingestao simplesmente para, sem erro visivel ate
+voce ir olhar.
+
+Publicar sem passar pela verificacao do Google funciona normalmente para a
+propria conta — so aparece uma tela de aviso ("Google hasn't verified this
+app") no consentimento. A verificacao formal so seria necessaria para
+distribuir a terceiros.
+
+### Se der erro
+
+| Erro | Causa |
+|---|---|
+| `redirect_uri_mismatch` | O URI que o script imprime nao esta cadastrado no client OAuth. Copie o que ele mostra e cadastre, ou use client tipo Desktop. |
+| `invalid_client` | `client_id`/`client_secret` errados, ou aspas sobrando no `.env`. |
+| "Google nao devolveu refresh_token" | A conta ja autorizou este app antes. Revogue em [myaccount.google.com/permissions](https://myaccount.google.com/permissions) e rode de novo. |
+| `Porta 3000 ocupada` | O `npm run dev` esta rodando. Feche e tente de novo. |
 
 ---
 
