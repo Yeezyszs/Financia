@@ -134,6 +134,50 @@ salve em `tests/fixtures/` substituindo os fixtures sinteticos de
 
 ---
 
+## Quando o banco nao manda e-mail de compra
+
+Resultado do `explore` na caixa do Pedro (ago/2026): **nem Nubank nem C6
+enviam e-mail por transacao**. O Nubank manda fatura fechada, extrato, Pix e
+marketing; o C6 manda so promocional. Compra e notificada por push no app.
+
+Isso nao invalida a arquitetura - o `EmailGateway` e so um dos gateways
+possiveis, e o dominio nao sabe de onde a transacao veio. Mas exige escolher
+outra fonte. Em ordem de recomendacao:
+
+### a) Import de CSV/OFX da fatura (recomendado)
+
+Nubank e C6 exportam a fatura em CSV/OFX pelo app e pelo site.
+
+Vantagens sobre o e-mail, que valem alem do desempate:
+- **dado completo**: parcelas, IOF, valor final apos conversao de moeda - o
+  e-mail de compra nunca traz nada disso
+- **autoritativo**: e o que o banco cobra, nao um aviso que pode ser estornado
+  depois sem novo e-mail
+- **sem risco de parser quebrar** quando o banco mexe no template de e-mail
+
+Custo: nao e tempo real. Voce baixa o arquivo quando a fatura fecha, ou uma
+vez por semana se quiser acompanhar de perto.
+
+Encaixe no codigo: um `StatementFileGateway` no lugar do `EmailGateway`, e um
+`CsvStatementParser` por instituicao no lugar do `EmailParser`. Os use cases,
+as entidades e a idempotencia por `raw_source_id` (que vira o id da linha do
+extrato) ficam exatamente como estao.
+
+### b) Ligar notificacao por e-mail no app do banco
+
+Vale checar antes de descartar - alguns bancos tem a opcao escondida em
+Perfil > Notificacoes. Se existir, o caminho de e-mail volta a valer e os
+parsers ja escritos passam a servir. Rode o `explore` de novo alguns dias
+depois de ligar.
+
+### c) Agregador de Open Finance
+
+Pluggy/Belvo resolvem de vez, com dado em tempo real e completo. Descartado no
+briefing por preco (a partir de R$2.500/mes), o que continua valendo para uso
+pessoal.
+
+---
+
 ## 4. Deploy na Vercel
 
 1. Importar o repo do GitHub na Vercel. A partir dai, `git push` deploya.
