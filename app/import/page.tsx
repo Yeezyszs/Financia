@@ -1,13 +1,12 @@
 import Link from 'next/link';
-import { buildContainer } from '@/src/infrastructure/config/container';
-import { env } from '@/src/infrastructure/config/env';
+import { requireSession } from '@/src/infrastructure/config/session';
 import { ImportForm } from './ImportForm';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ImportPage() {
-  const { repositories } = buildContainer();
-  const accounts = await repositories.accounts.listByOwner(env.defaultOwnerId);
+  const { ownerId, container } = await requireSession();
+  const accounts = await container.repositories.accounts.listByOwner(ownerId);
 
   return (
     <main>

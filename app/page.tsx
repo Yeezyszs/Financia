@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import { buildContainer } from '@/src/infrastructure/config/container';
-import { env } from '@/src/infrastructure/config/env';
+import { requireSession } from '@/src/infrastructure/config/session';
 import { Money } from '@/src/domain/entities/Money';
 import type { Transaction } from '@/src/domain/entities/Transaction';
 import { CategoryPicker } from './CategoryPicker';
@@ -11,10 +10,8 @@ const DAY_FORMAT = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-d
 const TIME_FORMAT = new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
 export default async function HomePage() {
-  // TODO: trocar por auth.getUser() quando o login entrar. Enquanto e so o
-  // Pedro, o owner vem do env - Arthur entra junto com a autenticacao.
-  const ownerId = env.defaultOwnerId;
-  const { useCases, repositories } = buildContainer();
+  const { ownerId, email, container } = await requireSession();
+  const { useCases, repositories } = container;
 
   const [{ items, totalCents }, categories, accounts] = await Promise.all([
     useCases.listTransactions.execute({ ownerId, limit: 100 }),
@@ -35,6 +32,9 @@ export default async function HomePage() {
 
       <p className="toolbar">
         <Link href="/import">Importar extrato (CSV) &rarr;</Link>
+        <span className="session">
+          {email} &middot; <a href="/logout">sair</a>
+        </span>
       </p>
 
       <dl className="summary">

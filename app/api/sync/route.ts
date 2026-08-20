@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { buildContainer } from '@/src/infrastructure/config/container';
+import { serviceRoleClient } from '@/src/infrastructure/config/supabase';
 import { env } from '@/src/infrastructure/config/env';
 
 export const runtime = 'nodejs';
@@ -24,7 +25,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
   try {
-    const { useCases, gmail, repositories } = buildContainer();
+    const { useCases, gmail, repositories } = buildContainer(serviceRoleClient());
 
     const report = await useCases.sync.execute({ ownerId: env.defaultOwnerId, since });
 

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { buildContainer } from '@/src/infrastructure/config/container';
+import { serviceRoleClient } from '@/src/infrastructure/config/supabase';
 import { env } from '@/src/infrastructure/config/env';
 
 export const runtime = 'nodejs';
@@ -37,7 +38,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   try {
-    const { useCases } = buildContainer();
+    const { useCases } = buildContainer(serviceRoleClient());
     const report = await useCases.ingestFromNotification.execute({
       ownerId: env.defaultOwnerId,
       emailAddress: notification.emailAddress,

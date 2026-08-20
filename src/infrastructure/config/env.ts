@@ -59,6 +59,10 @@ export const env = {
   get supabaseServiceRoleKey() {
     return required('SUPABASE_SERVICE_ROLE_KEY');
   },
+  /** Respeita RLS. Vai para o browser - e publica por design. */
+  get supabaseAnonKey() {
+    return required('NEXT_PUBLIC_SUPABASE_ANON_KEY');
+  },
   get googleClientId() {
     return required('GOOGLE_CLIENT_ID');
   },

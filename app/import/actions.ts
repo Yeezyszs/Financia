@@ -1,8 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { buildContainer } from '@/src/infrastructure/config/container';
-import { env } from '@/src/infrastructure/config/env';
+import { requireSession } from '@/src/infrastructure/config/session';
 import { readCsv } from '@/src/infrastructure/gateways/statement/CsvReader';
 import type { ImportReport } from '@/src/application/use-cases/ImportStatementFile';
 
@@ -16,9 +15,9 @@ export async function importStatement(_previous: ImportState, formData: FormData
   if (!accountId) return { error: 'Escolha a conta de destino.' };
 
   try {
-    const { useCases } = buildContainer();
-    const report = await useCases.importStatement.execute({
-      ownerId: env.defaultOwnerId,
+    const { ownerId, container } = await requireSession();
+    const report = await container.useCases.importStatement.execute({
+      ownerId,
       accountId,
       table: readCsv(await file.text()),
     });

@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { CategorizeTransaction } from '../../application/use-cases/CategorizeTransaction';
 import { IngestTransactionFromEmail } from '../../application/use-cases/IngestTransactionFromEmail';
 import { ListTransactions } from '../../application/use-cases/ListTransactions';
@@ -27,12 +27,12 @@ import { env } from './env';
  * Gmail ao mesmo tempo. Tudo acima daqui conversa por interface.
  *
  * Banco novo entra aqui, na lista de parsers, e em mais lugar nenhum.
+ *
+ * O cliente do banco vem de fora de proposito. Quem chama decide se e a
+ * sessao do usuario (passa por RLS) ou o service role (ignora RLS), e essa
+ * escolha fica visivel na chamada em vez de escondida aqui dentro.
  */
-export function buildContainer() {
-  const db = createClient(env.supabaseUrl, env.supabaseServiceRoleKey, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-
+export function buildContainer(db: SupabaseClient) {
   const transactions = new SupabaseTransactionRepository(db);
   const accounts = new SupabaseAccountRepository(db);
   const categories = new SupabaseCategoryRepository(db);

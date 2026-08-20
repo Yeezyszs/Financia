@@ -59,7 +59,21 @@ O job de importacao roda sem usuario logado, por isso precisa da
 tem acesso total ao banco — nunca no front, nunca commitada, nunca colada em
 chat.
 
-`SUPABASE_URL` e a "Project URL" na mesma tela.
+`SUPABASE_URL` e a "Project URL" na mesma tela. A `anon` vai no
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` — o prefixo `NEXT_PUBLIC_` e proposital: ela
+precisa chegar ao browser.
+
+### Login
+
+O app exige sessao. Use o e-mail e a senha do usuario criado no passo 3 para
+entrar em `/login`.
+
+Enquanto voce navega, o app fala com o banco pela **chave anon mais o cookie
+da sessao**, entao toda query passa pelas policies de RLS. A `service_role`
+fica so em `/api/sync` e `/api/gmail/webhook`, que rodam sem usuario e se
+autenticam por segredo proprio (`CRON_SECRET`, `PUBSUB_VERIFICATION_TOKEN`) —
+por isso o `DEFAULT_OWNER_ID` continua existindo: e o dono das transacoes que
+esses jobs ingerem.
 
 ## 2. Google Cloud + OAuth
 

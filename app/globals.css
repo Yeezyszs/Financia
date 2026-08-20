@@ -118,3 +118,19 @@ select.pending { border-color: var(--accent); }
 header a { color: var(--accent); text-decoration: none; font-size: 14px; }
 header a:hover { text-decoration: underline; }
 .toolbar { margin-bottom: 20px; }
+
+/* --- Sessao e login --- */
+main.narrow { max-width: 400px; padding-top: 15vh; }
+
+.toolbar { display: flex; justify-content: space-between; align-items: baseline;
+           gap: 12px; flex-wrap: wrap; }
+.session { color: var(--muted); font-size: 13px; }
+.session a { color: var(--muted); text-decoration: underline; }
+
+.import-form input[type='email'], .import-form input[type='password'] {
+  background: var(--bg); color: var(--text); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px; font-size: 16px;
+}
+.import-form input:focus-visible, .import-form select:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
