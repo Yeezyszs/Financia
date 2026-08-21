@@ -110,6 +110,7 @@ export function App(): ReactNode {
           <History
             accounts={accounts}
             onImported={() => setDataVersion((version) => version + 1)}
+            onAccountsChanged={loadReferenceData}
           />
         ) : null}
       </main>

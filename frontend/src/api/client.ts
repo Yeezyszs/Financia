@@ -102,6 +102,9 @@ export const api = {
   transactions: (query: TransactionQuery = {}) =>
     requestPage<Transaction[]>(`/transactions${toQueryString(query as Record<string, unknown>)}`),
 
+  createAccount: (body: { name: string; type: Account['type']; institution?: string }) =>
+    request<Account>('/accounts', { method: 'POST', body: JSON.stringify(body) }),
+
   imports: () => request<ImportRecord[]>('/imports'),
 
   createImport: (body: { accountId: string; filename: string; content: string; force?: boolean }) =>
