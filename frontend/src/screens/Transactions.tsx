@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api } from '../api/client.js';
 import type { Account, Category, Transaction } from '../api/types.js';
 import { date, money } from '../format.js';
+import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 
 const PAGE_SIZE = 50;
 
@@ -24,6 +25,8 @@ export function Transactions({
   const [to, setTo] = useState('');
   const [search, setSearch] = useState('');
   const [includeTransfers, setIncludeTransfers] = useState(false);
+  const isMobile = useMediaQuery(MOBILE);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // Busca com debounce para não disparar uma request por tecla digitada.
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -82,6 +85,12 @@ export function Transactions({
 
   const lastPage = offset + PAGE_SIZE >= total;
 
+  // No celular os filtros ocupavam a tela inteira antes de qualquer dado
+  // aparecer, então ficam recolhidos — com a contagem de quantos estão
+  // ativos, para não esconder que um filtro está limitando a lista.
+  const activeFilters = [accountId, categoryId, from, to, debouncedSearch].filter(Boolean).length;
+  const showFilters = !isMobile || filtersOpen;
+
   return (
     <>
       <h1 className="page-title">Transações</h1>
@@ -89,7 +98,18 @@ export function Transactions({
         {total} {total === 1 ? 'transação' : 'transações'} no filtro atual.
       </p>
 
-      <div className="filters">
+      {isMobile ? (
+        <button
+          className="ghost filter-toggle"
+          onClick={() => setFiltersOpen((open) => !open)}
+          aria-expanded={filtersOpen}
+        >
+          Filtros
+          {activeFilters > 0 ? <span className="badge">{activeFilters}</span> : null}
+        </button>
+      ) : null}
+
+      <div className="filters" hidden={!showFilters}>
         <div className="field">
           <label htmlFor="conta">Conta</label>
           <select id="conta" value={accountId} onChange={(e) => setAccountId(e.target.value)}>
@@ -148,68 +168,113 @@ export function Transactions({
 
       {error ? <div className="notice error">{error}</div> : null}
 
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Data</th>
-              <th>Descrição</th>
-              <th>Conta</th>
-              <th>Categoria</th>
-              <th className="num">Valor</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+      {isMobile ? (
+        <div className="card-list">
+          {loading ? (
+            <div className="card stack">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <span key={i} className="skeleton" />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <div className="card">
+              <div className="empty">
+                Nada aqui. Ajuste os filtros ou importe um extrato em Histórico.
+              </div>
+            </div>
+          ) : (
+            items.map((transaction) => (
+              <article className="tx-card" key={transaction.id}>
+                <div className="tx-card-top">
+                  <span className="tx-desc">{transaction.description}</span>
+                  <span
+                    className={transaction.amountCents > 0 ? 'amount-in num' : 'amount-out num'}
+                  >
+                    {money(transaction.amountCents)}
+                  </span>
+                </div>
+                <div className="tx-card-meta">
+                  <span>{date(transaction.occurredOn)}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{accountName.get(transaction.accountId) ?? '—'}</span>
+                  {transaction.categoryId ? (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <span>{categoryName.get(transaction.categoryId) ?? '—'}</span>
+                    </>
+                  ) : (
+                    <span className="tag">sem categoria</span>
+                  )}
+                  {transaction.isTransfer ? <span className="tag">transferência</span> : null}
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead>
               <tr>
-                <td colSpan={5}>
-                  <div className="stack" style={{ padding: '8px 0' }}>
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <span key={i} className="skeleton" />
-                    ))}
-                  </div>
-                </td>
+                <th>Data</th>
+                <th>Descrição</th>
+                <th>Conta</th>
+                <th>Categoria</th>
+                <th className="num">Valor</th>
               </tr>
-            ) : items.length === 0 ? (
-              <tr>
-                <td colSpan={5}>
-                  <div className="empty">
-                    Nada aqui. Ajuste os filtros ou importe um extrato em Histórico.
-                  </div>
-                </td>
-              </tr>
-            ) : (
-              items.map((transaction) => (
-                <tr key={transaction.id}>
-                  <td style={{ whiteSpace: 'nowrap' }}>{date(transaction.occurredOn)}</td>
-                  <td>
-                    {transaction.description}
-                    {transaction.isTransfer ? (
-                      <>
-                        {' '}
-                        <span className="tag">transferência</span>
-                      </>
-                    ) : null}
-                  </td>
-                  <td>{accountName.get(transaction.accountId) ?? '—'}</td>
-                  <td>
-                    {transaction.categoryId ? (
-                      categoryName.get(transaction.categoryId) ?? '—'
-                    ) : (
-                      <span className="tag">sem categoria</span>
-                    )}
-                  </td>
-                  <td className="num">
-                    <span className={transaction.amountCents > 0 ? 'amount-in' : 'amount-out'}>
-                      {money(transaction.amountCents)}
-                    </span>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan={5}>
+                    <div className="stack" style={{ padding: '8px 0' }}>
+                      {[0, 1, 2, 3, 4].map((i) => (
+                        <span key={i} className="skeleton" />
+                      ))}
+                    </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : items.length === 0 ? (
+                <tr>
+                  <td colSpan={5}>
+                    <div className="empty">
+                      Nada aqui. Ajuste os filtros ou importe um extrato em Histórico.
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                items.map((transaction) => (
+                  <tr key={transaction.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{date(transaction.occurredOn)}</td>
+                    <td>
+                      {transaction.description}
+                      {transaction.isTransfer ? (
+                        <>
+                          {' '}
+                          <span className="tag">transferência</span>
+                        </>
+                      ) : null}
+                    </td>
+                    <td>{accountName.get(transaction.accountId) ?? '—'}</td>
+                    <td>
+                      {transaction.categoryId ? (
+                        (categoryName.get(transaction.categoryId) ?? '—')
+                      ) : (
+                        <span className="tag">sem categoria</span>
+                      )}
+                    </td>
+                    <td className="num">
+                      <span className={transaction.amountCents > 0 ? 'amount-in' : 'amount-out'}>
+                        {money(transaction.amountCents)}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {total > PAGE_SIZE ? (
         <div className="row" style={{ marginTop: 14, justifyContent: 'space-between' }}>
@@ -224,7 +289,11 @@ export function Transactions({
             >
               Anterior
             </button>
-            <button className="ghost" disabled={lastPage} onClick={() => setOffset(offset + PAGE_SIZE)}>
+            <button
+              className="ghost"
+              disabled={lastPage}
+              onClick={() => setOffset(offset + PAGE_SIZE)}
+            >
               Próxima
             </button>
           </div>

@@ -378,7 +378,19 @@ tr:last-child td {
   white-space: nowrap;
 }
 
+/* Linha de upload: seletor de conta + botão, alinhados pela base. */
+.filters--upload {
+  margin-bottom: 0;
+  align-items: flex-end;
+}
+
 /* --------------------------------------------------------------- filtros */
+/* display explícito vence o atributo hidden — sem esta regra, recolher os
+   filtros no celular não surtia efeito nenhum. */
+[hidden] {
+  display: none !important;
+}
+
 .filters {
   display: flex;
   flex-wrap: wrap;
@@ -546,4 +558,210 @@ button.ghost {
   gap: 10px;
   align-items: center;
   flex-wrap: wrap;
+}
+
+/* =====================================================================
+   Celular
+   A quebra é em 720px: abaixo disso a tabela de 5 colunas deixa o valor
+   — a informação mais importante — fora da tela.
+   ===================================================================== */
+
+/* Barra de navegação fixa no rodapé, ao alcance do polegar. */
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: none;
+  background: var(--surface-1);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 20;
+}
+
+.tabbar button {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  /* 56px é o mínimo confortável para toque; menos que isso erra o alvo. */
+  min-height: 56px;
+  padding: 8px 4px;
+  cursor: pointer;
+}
+
+.tabbar button svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+.tabbar button[aria-current='page'] {
+  color: var(--accent);
+  font-weight: 550;
+}
+
+/* Lista de transações em cartões */
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tx-card {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 13px 14px;
+}
+
+.tx-card-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tx-desc {
+  font-size: 15px;
+  line-height: 1.35;
+  /* Descrição de extrato é longa; duas linhas bastam e o valor continua
+     alinhado à direita sem ser empurrado para fora. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tx-card-top .num {
+  font-size: 15px;
+  flex: none;
+}
+
+.tx-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: 99px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .tabbar {
+    display: flex;
+  }
+
+  main {
+    padding: 16px 14px;
+    /* Espaço para a barra do rodapé não cobrir o fim do conteúdo. */
+    padding-bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  .topbar {
+    height: 54px;
+    padding: 0 14px;
+    justify-content: space-between;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .page-subtitle {
+    font-size: 13.5px;
+  }
+
+  .kpi-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  /* O saldo ocupa a linha inteira: é o número que resume o mês. */
+  .kpi-row .card:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .kpi-value {
+    font-size: 21px;
+  }
+
+  .card {
+    padding: 14px;
+  }
+
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* No celular a coluna manda: alinhar pela base jogaria o botão para
+     o canto direito, longe do seletor a que ele pertence. */
+  .filters--upload {
+    align-items: stretch;
+  }
+
+  /* Mês e ano são curtos e andam juntos: empilhá-los gasta meia tela
+     antes de o primeiro número aparecer. */
+  .filters--compact {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .filters .field,
+  .filters input,
+  .filters select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Alvos de toque: 16px no input também evita o zoom automático do iOS.
+     Checkbox fica de fora — esticá-lo vira um quadrado deformado. */
+  input:not([type='checkbox']),
+  select,
+  button.primary,
+  button.ghost {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  input[type='checkbox'] {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    flex: none;
+  }
+
+  .legend {
+    font-size: 11px;
+    gap: 10px;
+  }
 }

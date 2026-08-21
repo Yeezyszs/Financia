@@ -23,16 +23,37 @@ export type ControllerResolver = (
 export function buildRoutes(route: ControllerResolver): Router {
   const router = Router();
 
-  router.get('/accounts', route((c) => c.accounts.list));
-  router.post('/accounts', route((c) => c.accounts.create));
+  router.get(
+    '/accounts',
+    route((c) => c.accounts.list),
+  );
+  router.post(
+    '/accounts',
+    route((c) => c.accounts.create),
+  );
 
-  router.get('/transactions', route((c) => c.transactions.list));
+  router.get(
+    '/transactions',
+    route((c) => c.transactions.list),
+  );
 
-  router.get('/imports', route((c) => c.imports.list));
-  router.post('/imports', route((c) => c.imports.create));
+  router.get(
+    '/imports',
+    route((c) => c.imports.list),
+  );
+  router.post(
+    '/imports',
+    route((c) => c.imports.create),
+  );
 
-  router.get('/categories', route((c) => c.reports.categories));
-  router.get('/reports/overview', route((c) => c.reports.overview));
+  router.get(
+    '/categories',
+    route((c) => c.reports.categories),
+  );
+  router.get(
+    '/reports/overview',
+    route((c) => c.reports.overview),
+  );
 
   return router;
 }

@@ -8,8 +8,16 @@ export interface UserProps {
 export class User {
   constructor(private readonly props: UserProps) {}
 
-  get id(): string { return this.props.id; }
-  get email(): string { return this.props.email; }
-  get name(): string | null { return this.props.name; }
-  get createdAt(): Date { return this.props.createdAt; }
+  get id(): string {
+    return this.props.id;
+  }
+  get email(): string {
+    return this.props.email;
+  }
+  get name(): string | null {
+    return this.props.name;
+  }
+  get createdAt(): Date {
+    return this.props.createdAt;
+  }
 }

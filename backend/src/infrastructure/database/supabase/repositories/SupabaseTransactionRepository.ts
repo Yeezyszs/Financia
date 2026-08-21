@@ -132,10 +132,12 @@ export class SupabaseTransactionRepository implements TransactionRepository {
     });
     if (error) throw error;
 
-    return (data as { month: string; income_cents: number; expense_cents: number }[]).map((row) => ({
-      month: row.month,
-      incomeCents: Number(row.income_cents),
-      expenseCents: Number(row.expense_cents),
-    }));
+    return (data as { month: string; income_cents: number; expense_cents: number }[]).map(
+      (row) => ({
+        month: row.month,
+        incomeCents: Number(row.income_cents),
+        expenseCents: Number(row.expense_cents),
+      }),
+    );
   }
 }

@@ -1,14 +1,9 @@
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
-import { ApiError, api } from "../api/client.js";
-import type { Account, ImportRecord, ImportResult } from "../api/types.js";
-import { date, dateTime } from "../format.js";
-import { NewAccountForm } from "../components/NewAccountForm.js";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { ApiError, api } from '../api/client.js';
+import type { Account, ImportRecord, ImportResult } from '../api/types.js';
+import { date, dateTime } from '../format.js';
+import { NewAccountForm } from '../components/NewAccountForm.js';
+import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 
 export function History({
   accounts,
@@ -20,7 +15,7 @@ export function History({
   onAccountsChanged: () => void;
 }): ReactNode {
   const [records, setRecords] = useState<ImportRecord[]>([]);
-  const [accountId, setAccountId] = useState("");
+  const [accountId, setAccountId] = useState('');
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -30,6 +25,7 @@ export function History({
     content: string;
   } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const isMobile = useMediaQuery(MOBILE);
 
   const refresh = useCallback(() => {
     api
@@ -64,13 +60,13 @@ export function History({
         refresh();
         onImported();
       } catch (err) {
-        if (err instanceof ApiError && err.code === "FILE_ALREADY_IMPORTED") {
+        if (err instanceof ApiError && err.code === 'FILE_ALREADY_IMPORTED') {
           // Arquivo repetido não é erro fatal: pode ser reimportação
           // intencional, e o dedupe por linha segura a duplicata.
           setDuplicateFile({ name, content });
           setError(err.message);
         } else {
-          setError(err instanceof Error ? err.message : "Falha ao importar");
+          setError(err instanceof Error ? err.message : 'Falha ao importar');
         }
       } finally {
         setBusy(false);
@@ -82,37 +78,34 @@ export function History({
   const handleFile = useCallback(
     (file: File) => {
       if (!accountId) {
-        setError("Escolha a conta antes de importar.");
+        setError('Escolha a conta antes de importar.');
         return;
       }
       const reader = new FileReader();
-      reader.onload = () => void upload(file.name, String(reader.result ?? ""));
-      reader.onerror = () => setError("Não consegui ler o arquivo.");
-      reader.readAsText(file, "utf-8");
+      reader.onload = () => void upload(file.name, String(reader.result ?? ''));
+      reader.onerror = () => setError('Não consegui ler o arquivo.');
+      reader.readAsText(file, 'utf-8');
     },
     [accountId, upload],
   );
 
-  const accountName = new Map(
-    accounts.map((account) => [account.id, account.name]),
-  );
+  const accountName = new Map(accounts.map((account) => [account.id, account.name]));
 
   return (
     <>
       <h1 className="page-title">Histórico de importações</h1>
       <p className="page-subtitle">
-        Suba o CSV exportado do app do banco. Linhas já importadas são
-        descartadas automaticamente, então períodos sobrepostos não viram
-        transação duplicada.
+        Suba o CSV exportado do app do banco. Linhas já importadas são descartadas automaticamente,
+        então períodos sobrepostos não viram transação duplicada.
       </p>
 
       <div className="card stack" style={{ marginBottom: 20 }}>
         {accounts.length === 0 ? (
           <div className="stack">
             <div className="notice" style={{ marginBottom: 0 }}>
-              Você ainda não tem nenhuma conta cadastrada. Crie uma para poder
-              importar — o tipo da conta é o que define como o arquivo será
-              lido: conta corrente lê o extrato, cartão lê a fatura.
+              Você ainda não tem nenhuma conta cadastrada. Crie uma para poder importar — o tipo da
+              conta é o que define como o arquivo será lido: conta corrente lê o extrato, cartão lê
+              a fatura.
             </div>
             <div className="row">
               <NewAccountForm onCreated={onAccountsChanged} />
@@ -120,10 +113,7 @@ export function History({
           </div>
         ) : (
           <>
-            <div
-              className="filters"
-              style={{ marginBottom: 0, alignItems: "flex-end" }}
-            >
+            <div className="filters filters--upload">
               <div className="field">
                 <label htmlFor="conta-import">Importar para</label>
                 <select
@@ -133,8 +123,7 @@ export function History({
                 >
                   {accounts.map((account) => (
                     <option key={account.id} value={account.id}>
-                      {account.name} —{" "}
-                      {account.type === "credit_card" ? "fatura" : "extrato"}
+                      {account.name} — {account.type === 'credit_card' ? 'fatura' : 'extrato'}
                     </option>
                   ))}
                 </select>
@@ -143,11 +132,10 @@ export function History({
             </div>
 
             <div
-              className={dragging ? "dropzone dragging" : "dropzone"}
+              className={dragging ? 'dropzone dragging' : 'dropzone'}
               onClick={() => inputRef.current?.click()}
               onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ")
-                  inputRef.current?.click();
+                if (e.key === 'Enter' || e.key === ' ') inputRef.current?.click();
               }}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -164,9 +152,7 @@ export function History({
               tabIndex={0}
               aria-label="Selecionar arquivo CSV para importar"
             >
-              {busy
-                ? "Importando..."
-                : "Arraste o CSV aqui ou clique para escolher"}
+              {busy ? 'Importando...' : 'Arraste o CSV aqui ou clique para escolher'}
             </div>
 
             <input
@@ -177,7 +163,7 @@ export function History({
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) handleFile(file);
-                e.target.value = "";
+                e.target.value = '';
               }}
             />
 
@@ -189,13 +175,7 @@ export function History({
                     <button
                       className="ghost"
                       disabled={busy}
-                      onClick={() =>
-                        void upload(
-                          duplicateFile.name,
-                          duplicateFile.content,
-                          true,
-                        )
-                      }
+                      onClick={() => void upload(duplicateFile.name, duplicateFile.content, true)}
                     >
                       Importar mesmo assim
                     </button>
@@ -206,14 +186,13 @@ export function History({
 
             {result ? (
               <div className="notice">
-                <b>{result.rowsImported}</b> transações importadas de{" "}
-                {result.rowsTotal} linhas · <b>{result.rowsDuplicated}</b> já
-                existiam · <b>{result.categorized}</b> categorizadas
-                automaticamente
+                <b>{result.rowsImported}</b> transações importadas de {result.rowsTotal} linhas ·{' '}
+                <b>{result.rowsDuplicated}</b> já existiam · <b>{result.categorized}</b>{' '}
+                categorizadas automaticamente
                 {result.periodStart ? (
                   <>
-                    {" "}
-                    · período {date(result.periodStart)} a{" "}
+                    {' '}
+                    · período {date(result.periodStart)} a{' '}
                     {date(result.periodEnd ?? result.periodStart)}
                   </>
                 ) : null}
@@ -223,62 +202,108 @@ export function History({
         )}
       </div>
 
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Quando</th>
-              <th>Arquivo</th>
-              <th>Conta</th>
-              <th>Período</th>
-              <th className="num">Importadas</th>
-              <th className="num">Duplicadas</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {records.length === 0 ? (
+      {isMobile ? (
+        <div className="card-list">
+          {records.length === 0 ? (
+            <div className="card">
+              <div className="empty">Nenhuma importação ainda.</div>
+            </div>
+          ) : (
+            records.map((record) => (
+              <article className="tx-card" key={record.id}>
+                <div className="tx-card-top">
+                  <span className="tx-desc">{record.filename}</span>
+                  {record.status === 'failed' ? (
+                    <span className="tag" style={{ color: 'var(--danger)' }}>
+                      falhou
+                    </span>
+                  ) : (
+                    <span className="num">
+                      <b>{record.rowsImported}</b> importadas
+                    </span>
+                  )}
+                </div>
+                <div className="tx-card-meta">
+                  <span>{dateTime(record.createdAt)}</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{accountName.get(record.accountId) ?? '—'}</span>
+                  {record.periodStart ? (
+                    <>
+                      <span aria-hidden="true">·</span>
+                      <span>
+                        {date(record.periodStart)} a {date(record.periodEnd ?? record.periodStart)}
+                      </span>
+                    </>
+                  ) : null}
+                  {record.rowsDuplicated > 0 ? (
+                    <span className="tag">{record.rowsDuplicated} já existiam</span>
+                  ) : null}
+                </div>
+                {record.errorMessage ? (
+                  <div className="tx-card-meta" style={{ color: 'var(--danger)' }}>
+                    {record.errorMessage}
+                  </div>
+                ) : null}
+              </article>
+            ))
+          )}
+        </div>
+      ) : (
+        <div className="table-wrap">
+          <table>
+            <thead>
               <tr>
-                <td colSpan={7}>
-                  <div className="empty">Nenhuma importação ainda.</div>
-                </td>
+                <th>Quando</th>
+                <th>Arquivo</th>
+                <th>Conta</th>
+                <th>Período</th>
+                <th className="num">Importadas</th>
+                <th className="num">Duplicadas</th>
+                <th>Status</th>
               </tr>
-            ) : (
-              records.map((record) => (
-                <tr key={record.id}>
-                  <td style={{ whiteSpace: "nowrap" }}>
-                    {dateTime(record.createdAt)}
-                  </td>
-                  <td>{record.filename}</td>
-                  <td>{accountName.get(record.accountId) ?? "—"}</td>
-                  <td style={{ whiteSpace: "nowrap" }}>
-                    {record.periodStart
-                      ? `${date(record.periodStart)} – ${date(record.periodEnd ?? record.periodStart)}`
-                      : "—"}
-                  </td>
-                  <td className="num">{record.rowsImported}</td>
-                  <td className="num">{record.rowsDuplicated}</td>
-                  <td>
-                    {record.status === "failed" ? (
-                      <span
-                        className="tag"
-                        title={record.errorMessage ?? ""}
-                        style={{ color: "var(--danger)" }}
-                      >
-                        falhou
-                      </span>
-                    ) : (
-                      <span className="tag">
-                        {record.status === "completed" ? "ok" : record.status}
-                      </span>
-                    )}
+            </thead>
+            <tbody>
+              {records.length === 0 ? (
+                <tr>
+                  <td colSpan={7}>
+                    <div className="empty">Nenhuma importação ainda.</div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                records.map((record) => (
+                  <tr key={record.id}>
+                    <td style={{ whiteSpace: 'nowrap' }}>{dateTime(record.createdAt)}</td>
+                    <td>{record.filename}</td>
+                    <td>{accountName.get(record.accountId) ?? '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {record.periodStart
+                        ? `${date(record.periodStart)} – ${date(record.periodEnd ?? record.periodStart)}`
+                        : '—'}
+                    </td>
+                    <td className="num">{record.rowsImported}</td>
+                    <td className="num">{record.rowsDuplicated}</td>
+                    <td>
+                      {record.status === 'failed' ? (
+                        <span
+                          className="tag"
+                          title={record.errorMessage ?? ''}
+                          style={{ color: 'var(--danger)' }}
+                        >
+                          falhou
+                        </span>
+                      ) : (
+                        <span className="tag">
+                          {record.status === 'completed' ? 'ok' : record.status}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }

@@ -10,28 +10,42 @@ export class SupabaseCategoryRepository implements CategoryRepository {
 
   async findById(userId: string, id: string): Promise<Category | null> {
     const { data, error } = await this.db
-      .from(TABLE).select('*').eq('user_id', userId).eq('id', id).maybeSingle();
+      .from(TABLE)
+      .select('*')
+      .eq('user_id', userId)
+      .eq('id', id)
+      .maybeSingle();
     if (error) throw error;
     return data ? CategoryMapper.toDomain(data as CategoryRow) : null;
   }
 
   async findByName(userId: string, name: string): Promise<Category | null> {
     const { data, error } = await this.db
-      .from(TABLE).select('*').eq('user_id', userId).ilike('name', name).maybeSingle();
+      .from(TABLE)
+      .select('*')
+      .eq('user_id', userId)
+      .ilike('name', name)
+      .maybeSingle();
     if (error) throw error;
     return data ? CategoryMapper.toDomain(data as CategoryRow) : null;
   }
 
   async listByUser(userId: string): Promise<Category[]> {
     const { data, error } = await this.db
-      .from(TABLE).select('*').eq('user_id', userId).order('name');
+      .from(TABLE)
+      .select('*')
+      .eq('user_id', userId)
+      .order('name');
     if (error) throw error;
     return (data as CategoryRow[]).map(CategoryMapper.toDomain);
   }
 
   async create(category: Category): Promise<Category> {
     const { data, error } = await this.db
-      .from(TABLE).insert(CategoryMapper.toRow(category)).select().single();
+      .from(TABLE)
+      .insert(CategoryMapper.toRow(category))
+      .select()
+      .single();
     if (error) throw error;
     return CategoryMapper.toDomain(data as CategoryRow);
   }

@@ -21,14 +21,21 @@ export class SupabaseCategoryRuleRepository implements CategoryRuleRepository {
 
   async findById(userId: string, id: string): Promise<CategoryRule | null> {
     const { data, error } = await this.db
-      .from(TABLE).select('*').eq('user_id', userId).eq('id', id).maybeSingle();
+      .from(TABLE)
+      .select('*')
+      .eq('user_id', userId)
+      .eq('id', id)
+      .maybeSingle();
     if (error) throw error;
     return data ? CategoryRuleMapper.toDomain(data as CategoryRuleRow) : null;
   }
 
   async create(rule: CategoryRule): Promise<CategoryRule> {
     const { data, error } = await this.db
-      .from(TABLE).insert(CategoryRuleMapper.toRow(rule)).select().single();
+      .from(TABLE)
+      .insert(CategoryRuleMapper.toRow(rule))
+      .select()
+      .single();
     if (error) throw error;
     return CategoryRuleMapper.toDomain(data as CategoryRuleRow);
   }

@@ -21,17 +21,41 @@ export interface ImportProps {
 export class Import {
   constructor(private readonly props: ImportProps) {}
 
-  get id(): string { return this.props.id; }
-  get userId(): string { return this.props.userId; }
-  get accountId(): string { return this.props.accountId; }
-  get filename(): string { return this.props.filename; }
-  get fileHash(): string { return this.props.fileHash; }
-  get status(): ImportStatus { return this.props.status; }
-  get rowsTotal(): number { return this.props.rowsTotal; }
-  get rowsImported(): number { return this.props.rowsImported; }
-  get rowsDuplicated(): number { return this.props.rowsDuplicated; }
+  get id(): string {
+    return this.props.id;
+  }
+  get userId(): string {
+    return this.props.userId;
+  }
+  get accountId(): string {
+    return this.props.accountId;
+  }
+  get filename(): string {
+    return this.props.filename;
+  }
+  get fileHash(): string {
+    return this.props.fileHash;
+  }
+  get status(): ImportStatus {
+    return this.props.status;
+  }
+  get rowsTotal(): number {
+    return this.props.rowsTotal;
+  }
+  get rowsImported(): number {
+    return this.props.rowsImported;
+  }
+  get rowsDuplicated(): number {
+    return this.props.rowsDuplicated;
+  }
 
-  complete(stats: { rowsTotal: number; rowsImported: number; rowsDuplicated: number; periodStart: string | null; periodEnd: string | null }): Import {
+  complete(stats: {
+    rowsTotal: number;
+    rowsImported: number;
+    rowsDuplicated: number;
+    periodStart: string | null;
+    periodEnd: string | null;
+  }): Import {
     return new Import({
       ...this.props,
       ...stats,
@@ -49,5 +73,7 @@ export class Import {
     });
   }
 
-  toJSON(): ImportProps { return { ...this.props }; }
+  toJSON(): ImportProps {
+    return { ...this.props };
+  }
 }

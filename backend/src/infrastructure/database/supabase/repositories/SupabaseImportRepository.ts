@@ -10,12 +10,20 @@ export class SupabaseImportRepository implements ImportRepository {
 
   async findById(userId: string, id: string): Promise<Import | null> {
     const { data, error } = await this.db
-      .from(TABLE).select('*').eq('user_id', userId).eq('id', id).maybeSingle();
+      .from(TABLE)
+      .select('*')
+      .eq('user_id', userId)
+      .eq('id', id)
+      .maybeSingle();
     if (error) throw error;
     return data ? ImportMapper.toDomain(data as ImportRow) : null;
   }
 
-  async findByFileHash(userId: string, accountId: string, fileHash: string): Promise<Import | null> {
+  async findByFileHash(
+    userId: string,
+    accountId: string,
+    fileHash: string,
+  ): Promise<Import | null> {
     const { data, error } = await this.db
       .from(TABLE)
       .select('*')
@@ -27,7 +35,10 @@ export class SupabaseImportRepository implements ImportRepository {
     return data ? ImportMapper.toDomain(data as ImportRow) : null;
   }
 
-  async listByUser(userId: string, options: { limit?: number; offset?: number } = {}): Promise<Import[]> {
+  async listByUser(
+    userId: string,
+    options: { limit?: number; offset?: number } = {},
+  ): Promise<Import[]> {
     const offset = options.offset ?? 0;
     const limit = options.limit ?? 30;
 
@@ -43,7 +54,10 @@ export class SupabaseImportRepository implements ImportRepository {
 
   async create(record: Import): Promise<Import> {
     const { data, error } = await this.db
-      .from(TABLE).insert(ImportMapper.toRow(record)).select().single();
+      .from(TABLE)
+      .insert(ImportMapper.toRow(record))
+      .select()
+      .single();
     if (error) throw error;
     return ImportMapper.toDomain(data as ImportRow);
   }

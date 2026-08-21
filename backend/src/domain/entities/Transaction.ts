@@ -79,21 +79,51 @@ export class Transaction {
     });
   }
 
-  get id(): string { return this.props.id; }
-  get userId(): string { return this.props.userId; }
-  get accountId(): string { return this.props.accountId; }
-  get importId(): string | null { return this.props.importId; }
-  get categoryId(): string | null { return this.props.categoryId; }
-  get occurredOn(): string { return this.props.occurredOn; }
-  get description(): string { return this.props.description; }
-  get amount(): Money { return this.props.amount; }
-  get isTransfer(): boolean { return this.props.isTransfer; }
-  get counterpartTransactionId(): string | null { return this.props.counterpartTransactionId; }
-  get categorizedBy(): CategorizedBy { return this.props.categorizedBy; }
-  get appliedRuleId(): string | null { return this.props.appliedRuleId; }
-  get source(): TransactionSource { return this.props.source; }
-  get fingerprint(): string { return this.props.fingerprint; }
-  get notes(): string | null { return this.props.notes; }
+  get id(): string {
+    return this.props.id;
+  }
+  get userId(): string {
+    return this.props.userId;
+  }
+  get accountId(): string {
+    return this.props.accountId;
+  }
+  get importId(): string | null {
+    return this.props.importId;
+  }
+  get categoryId(): string | null {
+    return this.props.categoryId;
+  }
+  get occurredOn(): string {
+    return this.props.occurredOn;
+  }
+  get description(): string {
+    return this.props.description;
+  }
+  get amount(): Money {
+    return this.props.amount;
+  }
+  get isTransfer(): boolean {
+    return this.props.isTransfer;
+  }
+  get counterpartTransactionId(): string | null {
+    return this.props.counterpartTransactionId;
+  }
+  get categorizedBy(): CategorizedBy {
+    return this.props.categorizedBy;
+  }
+  get appliedRuleId(): string | null {
+    return this.props.appliedRuleId;
+  }
+  get source(): TransactionSource {
+    return this.props.source;
+  }
+  get fingerprint(): string {
+    return this.props.fingerprint;
+  }
+  get notes(): string | null {
+    return this.props.notes;
+  }
 
   /** Só conta como despesa se for saída E não for transferência interna. */
   get countsAsExpense(): boolean {
@@ -105,7 +135,11 @@ export class Transaction {
   }
 
   /** Categorização automática/manual sempre passa por aqui. */
-  categorize(categoryId: string, by: Exclude<CategorizedBy, 'uncategorized'>, ruleId?: string): Transaction {
+  categorize(
+    categoryId: string,
+    by: Exclude<CategorizedBy, 'uncategorized'>,
+    ruleId?: string,
+  ): Transaction {
     return new Transaction({
       ...this.props,
       categoryId,

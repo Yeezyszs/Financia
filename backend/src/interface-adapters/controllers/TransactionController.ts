@@ -11,8 +11,14 @@ const csv = z
 const listSchema = z.object({
   accountIds: csv.optional(),
   categoryIds: csv.optional(),
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  from: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  to: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   search: z.string().min(1).optional(),
   includeTransfers: z.coerce.boolean().optional(),
   onlyUncategorized: z.coerce.boolean().optional(),

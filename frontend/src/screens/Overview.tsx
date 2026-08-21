@@ -4,10 +4,21 @@ import type { Overview as OverviewData } from '../api/types.js';
 import { CategoryChart } from '../components/CategoryChart.js';
 import { MonthlyChart } from '../components/MonthlyChart.js';
 import { money, monthRange } from '../format.js';
+import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 
 const MONTHS = [
-  'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
+  'Janeiro',
+  'Fevereiro',
+  'Março',
+  'Abril',
+  'Maio',
+  'Junho',
+  'Julho',
+  'Agosto',
+  'Setembro',
+  'Outubro',
+  'Novembro',
+  'Dezembro',
 ];
 
 export function Overview(): ReactNode {
@@ -17,6 +28,7 @@ export function Overview(): ReactNode {
   const [data, setData] = useState<OverviewData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const isMobile = useMediaQuery(MOBILE);
 
   useEffect(() => {
     let active = true;
@@ -51,7 +63,7 @@ export function Overview(): ReactNode {
         da fatura — ficam de fora dos totais.
       </p>
 
-      <div className="filters">
+      <div className="filters filters--compact">
         <div className="field">
           <label htmlFor="mes">Mês</label>
           <select id="mes" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
@@ -82,7 +94,11 @@ export function Overview(): ReactNode {
             <i className="swatch" style={{ background: 'var(--series-income)' }} /> Receitas
           </p>
           <div className="kpi-value">
-            {loading ? <span className="skeleton" style={{ display: 'block', width: 120 }} /> : money(data?.incomeCents ?? 0)}
+            {loading ? (
+              <span className="skeleton" style={{ display: 'block', width: 120 }} />
+            ) : (
+              money(data?.incomeCents ?? 0)
+            )}
           </div>
         </div>
 
@@ -91,22 +107,37 @@ export function Overview(): ReactNode {
             <i className="swatch" style={{ background: 'var(--series-expense)' }} /> Despesas
           </p>
           <div className="kpi-value">
-            {loading ? <span className="skeleton" style={{ display: 'block', width: 120 }} /> : money(data?.expenseCents ?? 0)}
+            {loading ? (
+              <span className="skeleton" style={{ display: 'block', width: 120 }} />
+            ) : (
+              money(data?.expenseCents ?? 0)
+            )}
           </div>
         </div>
 
         <div className="card">
           <p className="kpi-label">Saldo do mês</p>
-          <div className="kpi-value" style={{ color: balancePositive ? undefined : 'var(--danger)' }}>
-            {loading ? <span className="skeleton" style={{ display: 'block', width: 120 }} /> : money(data?.balanceCents ?? 0)}
+          <div
+            className="kpi-value"
+            style={{ color: balancePositive ? undefined : 'var(--danger)' }}
+          >
+            {loading ? (
+              <span className="skeleton" style={{ display: 'block', width: 120 }} />
+            ) : (
+              money(data?.balanceCents ?? 0)
+            )}
           </div>
-          <p className="kpi-hint">{balancePositive ? 'Receitas maiores que despesas' : 'Despesas maiores que receitas'}</p>
+          <p className="kpi-hint">
+            {balancePositive ? 'Receitas maiores que despesas' : 'Despesas maiores que receitas'}
+          </p>
         </div>
       </div>
 
       <div className="chart-grid">
         <div className="card">
-          <MonthlyChart data={data?.monthly ?? []} year={year} />
+          {/* Doze meses em 330px deixam os rótulos ilegíveis: no celular
+              mostramos os seis últimos, que é a janela que interessa. */}
+          <MonthlyChart data={data?.monthly ?? []} year={year} months={isMobile ? 6 : 12} />
         </div>
 
         <div className="card">

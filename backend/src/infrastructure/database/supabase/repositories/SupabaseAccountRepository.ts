@@ -30,7 +30,10 @@ export class SupabaseAccountRepository implements AccountRepository {
     return data ? AccountMapper.toDomain(data as AccountRow) : null;
   }
 
-  async listByUser(userId: string, options: { includeInactive?: boolean } = {}): Promise<Account[]> {
+  async listByUser(
+    userId: string,
+    options: { includeInactive?: boolean } = {},
+  ): Promise<Account[]> {
     let query = this.db.from(TABLE).select('*').eq('user_id', userId).order('name');
     if (!options.includeInactive) query = query.eq('is_active', true);
 

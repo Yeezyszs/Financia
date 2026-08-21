@@ -19,24 +19,43 @@ export interface CategoryRuleProps {
 export class CategoryRule {
   constructor(private readonly props: CategoryRuleProps) {}
 
-  get id(): string { return this.props.id; }
-  get userId(): string { return this.props.userId; }
-  get categoryId(): string { return this.props.categoryId; }
-  get pattern(): string { return this.props.pattern; }
-  get matchType(): RuleMatchType { return this.props.matchType; }
-  get accountId(): string | null { return this.props.accountId; }
-  get priority(): number { return this.props.priority; }
-  get source(): RuleSource { return this.props.source; }
-  get isActive(): boolean { return this.props.isActive; }
+  get id(): string {
+    return this.props.id;
+  }
+  get userId(): string {
+    return this.props.userId;
+  }
+  get categoryId(): string {
+    return this.props.categoryId;
+  }
+  get pattern(): string {
+    return this.props.pattern;
+  }
+  get matchType(): RuleMatchType {
+    return this.props.matchType;
+  }
+  get accountId(): string | null {
+    return this.props.accountId;
+  }
+  get priority(): number {
+    return this.props.priority;
+  }
+  get source(): RuleSource {
+    return this.props.source;
+  }
+  get isActive(): boolean {
+    return this.props.isActive;
+  }
 
   matches(description: string, accountId: string): boolean {
     if (!this.props.isActive) return false;
     if (this.props.accountId && this.props.accountId !== accountId) return false;
 
     const target = normalizeDescription(description);
-    const pattern = this.props.matchType === 'regex'
-      ? this.props.pattern
-      : normalizeDescription(this.props.pattern);
+    const pattern =
+      this.props.matchType === 'regex'
+        ? this.props.pattern
+        : normalizeDescription(this.props.pattern);
 
     switch (this.props.matchType) {
       case 'exact':
@@ -52,5 +71,7 @@ export class CategoryRule {
     }
   }
 
-  toJSON(): CategoryRuleProps { return { ...this.props }; }
+  toJSON(): CategoryRuleProps {
+    return { ...this.props };
+  }
 }

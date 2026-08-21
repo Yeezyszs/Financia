@@ -67,7 +67,11 @@ export function detectDelimiter(content: string): ',' | ';' {
 /** Índice de uma coluna aceitando variações de nome/acento/caixa. */
 export function columnIndex(header: string[], candidates: string[]): number {
   const normalized = header.map((h) =>
-    h.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim(),
+    h
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim(),
   );
   for (const candidate of candidates) {
     const index = normalized.indexOf(candidate);

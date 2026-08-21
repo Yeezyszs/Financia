@@ -33,23 +33,40 @@ function niceScale(max: number): { top: number; ticks: number[] } {
   return { top, ticks: [0, step, step * 2, step * 3, top] };
 }
 
-export function MonthlyChart({ data, year }: { data: MonthlyTotal[]; year: number }): ReactNode {
+export function MonthlyChart({
+  data,
+  year,
+  months: monthCount = 12,
+}: {
+  data: MonthlyTotal[];
+  year: number;
+  months?: number;
+}): ReactNode {
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
 
   // O gráfico mostra os 12 meses do ano, mesmo os sem movimento: buraco
   // no meio da série é informação, não motivo para encolher o eixo.
   const byMonth = new Map(data.map((row) => [row.month, row]));
-  const months = Array.from({ length: 12 }, (_, index) => {
+  const todos = Array.from({ length: 12 }, (_, index) => {
     const key = `${year}-${String(index + 1).padStart(2, '0')}`;
     return byMonth.get(key) ?? { month: key, incomeCents: 0, expenseCents: 0 };
   });
+
+  // Ao recortar, mostra a janela que termina no último mês com movimento
+  // — não adianta exibir seis meses vazios de fim de ano.
+  const ultimoComDado = todos.reduce(
+    (ultimo, mes, index) => (mes.incomeCents > 0 || mes.expenseCents > 0 ? index : ultimo),
+    11,
+  );
+  const fim = Math.max(monthCount - 1, Math.min(ultimoComDado, 11));
+  const months = monthCount >= 12 ? todos : todos.slice(fim - monthCount + 1, fim + 1);
 
   const max = Math.max(...months.flatMap((m) => [m.incomeCents, m.expenseCents]), 0);
   const { top, ticks } = niceScale(max);
 
   const plotWidth = WIDTH - PAD.left - PAD.right;
   const plotHeight = HEIGHT - PAD.top - PAD.bottom;
-  const slotWidth = plotWidth / 12;
+  const slotWidth = plotWidth / months.length;
   const barWidth = Math.max((slotWidth - BAR_GAP) / 2 - 5, 3);
   const toY = (cents: number) => PAD.top + plotHeight - (cents / top) * plotHeight;
 
@@ -155,7 +172,9 @@ export function MonthlyChart({ data, year }: { data: MonthlyTotal[]; year: numbe
           })}
         </svg>
       ) : (
-        <div className="empty">Sem movimento em {year}. Importe um extrato para ver a evolução.</div>
+        <div className="empty">
+          Sem movimento em {year}. Importe um extrato para ver a evolução.
+        </div>
       )}
 
       <Tooltip state={tooltip} />
