@@ -1,4 +1,3 @@
-import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Env } from '../infrastructure/config/env.js';
 import { createSupabaseClient } from '../infrastructure/database/supabase/client.js';
 import { SupabaseAccountRepository } from '../infrastructure/database/supabase/repositories/SupabaseAccountRepository.js';
@@ -21,23 +20,18 @@ import { AccountController } from '../interface-adapters/controllers/AccountCont
 import { TransactionController } from '../interface-adapters/controllers/TransactionController.js';
 import { ImportController } from '../interface-adapters/controllers/ImportController.js';
 import { ReportController } from '../interface-adapters/controllers/ReportController.js';
+import type { Controllers } from '../interface-adapters/routes/index.js';
 
 /**
  * Composition root: o único lugar do sistema que conhece todas as camadas.
  * Trocar Supabase por outro banco é trocar as linhas de repositório aqui.
+ *
+ * Montado por request, porque o cliente do banco carrega o JWT de quem
+ * chamou — é isso que faz o RLS valer. O custo é montar alguns objetos
+ * sem estado por chamada, o que não aparece em nenhum profiler.
  */
-export interface Container {
-  db: SupabaseClient;
-  controllers: {
-    accounts: AccountController;
-    transactions: TransactionController;
-    imports: ImportController;
-    reports: ReportController;
-  };
-}
-
-export function buildContainer(env: Env): Container {
-  const db = createSupabaseClient(env);
+export function buildControllers(env: Env, accessToken: string): Controllers {
+  const db = createSupabaseClient(env, accessToken);
 
   // infraestrutura
   const ids = new UuidGenerator();
@@ -72,12 +66,9 @@ export function buildContainer(env: Env): Container {
   const listCategories = new ListCategoriesUseCase(categoryRepository);
 
   return {
-    db,
-    controllers: {
-      accounts: new AccountController(createAccount, listAccounts),
-      transactions: new TransactionController(listTransactions),
-      imports: new ImportController(importStatement, listImports),
-      reports: new ReportController(getOverview, listCategories),
-    },
+    accounts: new AccountController(createAccount, listAccounts),
+    transactions: new TransactionController(listTransactions),
+    imports: new ImportController(importStatement, listImports),
+    reports: new ReportController(getOverview, listCategories),
   };
 }

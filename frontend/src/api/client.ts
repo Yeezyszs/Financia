@@ -1,3 +1,4 @@
+import { supabase } from '../supabase.js';
 import type {
   Account,
   Category,
@@ -8,36 +9,16 @@ import type {
   TransactionQuery,
 } from './types.js';
 
-const TOKEN_KEY = 'financia:token';
-
 /**
- * O token de acesso da API é digitado pelo usuário e fica no
- * localStorage — nunca embutido no bundle, que é público. É a trava
- * temporária até entrar login pelo Supabase Auth.
+ * Toda chamada vai com o JWT da sessão do Supabase. O supabase-js cuida
+ * de renovar o token antes de expirar, então basta pedir a sessão atual
+ * a cada request.
  */
-export const tokenStorage = {
-  get(): string | null {
-    try {
-      return localStorage.getItem(TOKEN_KEY);
-    } catch {
-      return null;
-    }
-  },
-  set(token: string): void {
-    try {
-      localStorage.setItem(TOKEN_KEY, token);
-    } catch {
-      /* navegador com storage bloqueado: a sessão vive só nesta aba */
-    }
-  },
-  clear(): void {
-    try {
-      localStorage.removeItem(TOKEN_KEY);
-    } catch {
-      /* nada a fazer */
-    }
-  },
-};
+async function authHeaders(): Promise<Record<string, string>> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export class ApiError extends Error {
   constructor(
@@ -57,13 +38,11 @@ function describe(error: { message?: string; code?: string; detail?: string } | 
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = tokenStorage.get();
-
   const response = await fetch(`/api${path}`, {
     ...init,
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'x-api-key': token } : {}),
+      ...(await authHeaders()),
       ...init.headers,
     },
   });
@@ -81,11 +60,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 /** Igual ao request, mas devolve o envelope inteiro (data + meta). */
 async function requestPage<T>(path: string): Promise<{ data: T; meta: PageMeta }> {
-  const token = tokenStorage.get();
-
-  const response = await fetch(`/api${path}`, {
-    headers: token ? { 'x-api-key': token } : {},
-  });
+  const response = await fetch(`/api${path}`, { headers: await authHeaders() });
 
   const text = await response.text();
   const payload = text ? (JSON.parse(text) as Record<string, unknown>) : {};

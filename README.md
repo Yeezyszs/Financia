@@ -65,6 +65,8 @@ Migrations em `supabase/migrations/`, aplicadas em ordem:
 | `0004_report_functions.sql` | agregações do dashboard (por categoria, mensal) |
 | `0005_hardening.sql` | search_path fixo, pg_trgm fora do public, funções fora do alcance da anon key |
 | `0006_increment_rule_hits.sql` | contador de uso das regras de categorização |
+| `0007_totals_split_sign.sql` | entrada e saída separadas por categoria |
+| `0008_grants_for_authenticated.sql` | funções executáveis pelo usuário logado |
 
 O projeto **Financia** (`mmijyibobnigjtirzzja`, região us-west-2) já está com as migrations aplicadas, RLS ligada nas 9 tabelas, o usuário single-user criado e semeado (15 categorias, 25 regras) e as duas contas do MVP prontas: `Nubank Conta Corrente` e `Nubank Cartão de Crédito` (essa última já apontando para a conta corrente que quita a fatura).
 
@@ -78,7 +80,8 @@ select seed_user_defaults('<auth-user-id>');
 ## Rodando o backend
 
 ```bash
-cp backend/.env.example backend/.env   # SUPABASE_URL, SERVICE_ROLE_KEY, API_TOKEN, DEFAULT_USER_ID
+cp backend/.env.example backend/.env     # SUPABASE_URL, SUPABASE_ANON_KEY
+cp frontend/.env.example frontend/.env   # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
 npm install                            # workspaces: instala backend e frontend
 
 npm run dev:api    # API em http://localhost:3333
@@ -88,11 +91,11 @@ npm test           # testes do backend
 npm run typecheck  # backend + frontend
 ```
 
-O `.env` nunca vai para o git (`backend/.gitignore`). A `service_role` key ignora RLS por completo — ela só existe no backend, nunca no frontend, que usará a anon key.
+O `.env` nunca vai para o git. Nenhuma das variáveis é secreta: a anon key é pública por design e quem protege os dados é o RLS — ver **Autenticação**.
 
 ## API
 
-Toda rota (menos `/api/health`) exige o header `x-api-key` com o `API_TOKEN`.
+Toda rota (menos `/api/health`) exige o header `Authorization: Bearer <jwt>` da sessão do Supabase.
 
 | rota | o que faz |
 |---|---|
@@ -106,7 +109,7 @@ Importar um extrato:
 
 ```bash
 curl -X POST "$API_URL/api/imports" \
-  -H "x-api-key: $API_TOKEN" -H 'Content-Type: application/json' \
+  -H "Authorization: Bearer $JWT" -H 'Content-Type: application/json' \
   -d "$(jq -n --arg c "$(cat nubank-agosto.csv)" \
         '{accountId:"<uuid-da-conta>", filename:"nubank-agosto.csv", content:$c}')"
 ```
@@ -129,7 +132,7 @@ O caminho de um arquivo: **parser do banco → fingerprint por linha → descart
 
 ## Deploy (Vercel)
 
-GitHub Pages não serve para o backend — é hospedagem estática, não roda Node nem guarda secret, e a `service_role` key não pode viver num bundle de frontend. Na Vercel os dois convivem: o React como estático e o Express como serverless function.
+GitHub Pages não serve para o backend — é hospedagem estática e não roda Node, e o parser de CSV, o dedupe e a conversa com o banco precisam de servidor. Na Vercel os dois convivem: o React como estático e o Express como serverless function.
 
 1. Importar o repositório na Vercel deixando o **Root Directory vazio (a raiz do repo)**.
    Apontar para `frontend/` não funciona: o `vercel.json` e a pasta `api/` ficam
@@ -137,13 +140,15 @@ GitHub Pages não serve para o backend — é hospedagem estática, não roda No
    toma 404 em toda chamada de `/api`.
 2. Cadastrar as variáveis de ambiente (Settings → Environment Variables):
 
-| variável | valor |
-|---|---|
-| `SUPABASE_URL` | `https://mmijyibobnigjtirzzja.supabase.co` |
-| `SUPABASE_SERVICE_ROLE_KEY` | a service_role key (nunca no frontend) |
-| `API_TOKEN` | `openssl rand -hex 32` |
-| `DEFAULT_USER_ID` | id do usuário no `auth.users` |
-| `NODE_ENV` | `production` |
+| variável | valor | para quê |
+|---|---|---|
+| `SUPABASE_URL` | `https://mmijyibobnigjtirzzja.supabase.co` | backend |
+| `SUPABASE_ANON_KEY` | a anon key | backend |
+| `VITE_SUPABASE_URL` | mesma URL | build do frontend |
+| `VITE_SUPABASE_ANON_KEY` | mesma anon key | build do frontend |
+
+Nenhuma delas é secreta. As duas com prefixo `VITE_` são lidas no build e entram no
+bundle — é assim que tem que ser: a anon key é feita para ser pública.
 
 As dependências de runtime (`express`, `zod`, `@supabase/supabase-js`) são declaradas
 no `package.json` da **raiz**, não só no do backend: a function mora na raiz e precisa
@@ -152,9 +157,39 @@ em `backend/node_modules/` e a function não as encontra.
 
 `vercel.json` faz o build do frontend (`frontend/dist`) e reescreve `/api/(.*)` para a function em `api/index.ts`, que é a mesma app Express do dev. Frontend e API saem do **mesmo domínio**: sem CORS e sem token atravessando origem.
 
-**Sobre o `API_TOKEN`:** o backend fala com o Supabase usando a `service_role`, que ignora RLS. Uma URL pública sem trava seria acesso total às finanças para quem descobrisse o endereço. O token é o substituto temporário até entrar login de verdade (Supabase Auth), quando só o middleware `currentUser` muda.
+## Autenticação
 
-O token **não** vai embutido no bundle do frontend — isso o tornaria público, já que qualquer um baixa o JS. Ele é digitado na tela de entrada e fica no `localStorage` do navegador.
+Login por e-mail e senha, com **Supabase Auth**. O desenho importa mais que a tela:
+
+O frontend faz login com a **anon key** (pública por design — ela vai no bundle e não é
+segredo) e recebe um JWT. Cada chamada à API leva esse JWT no `Authorization`. O backend
+lê o `sub` para saber de quem é a request e **repassa o mesmo JWT ao PostgREST**, que
+verifica a assinatura e expõe o `sub` como `auth.uid()` dentro do Postgres.
+
+Consequência: **quem isola os dados é o RLS**, não um `where user_id = ...` que alguém
+possa esquecer de escrever. Um JWT forjado passa pelo middleware e morre no banco — não lê
+nem grava nada. Verificado com a sessão simulada no Postgres: gravar em nome de outro
+usuário levanta `insufficient_privilege`.
+
+A `service_role` key **saiu do projeto**. Ela ignora RLS por completo, e a única razão de
+existir aqui era suprir a falta de autenticação. Hoje nenhuma variável de ambiente do
+Financia é secreta.
+
+### Criar ou trocar a senha
+
+O usuário foi criado direto no `auth.users`, sem senha. Para definir uma, no SQL Editor do
+Supabase (a senha não passa por lugar nenhum além do seu navegador e do banco):
+
+```sql
+update auth.users
+   set encrypted_password = crypt('SUA_SENHA_AQUI', gen_salt('bf')),
+       updated_at = now()
+ where email = 'pedromaraia454@gmail.com';
+```
+
+Depois disso o login na tela funciona. A opção "Esqueci minha senha" usa o e-mail do
+Supabase, que no plano free é limitado a poucos envios por hora — para trocar a senha, o
+SQL acima é mais direto.
 
 ## Frontend
 
@@ -170,7 +205,6 @@ Três telas, sem dependência de UI além do React — os gráficos são SVG esc
 
 - **Editar a categoria de uma transação pela UI** + "lembrar essa categoria" (cria uma regra `learned`) — hoje a categorização é só automática, corrigir exige mexer no banco
 - **Reconciliação explícita fatura x conta** — linkar as duas pontas do pagamento (`counterpart_transaction_id`); hoje as duas já ficam fora dos totais, falta o link
-- **Login de verdade** (Supabase Auth) no lugar do `API_TOKEN`
 - **Metas e Parcelas** — tabelas prontas, sem UI
 - **Adapter do C6** — a porta existe, falta um export real
 - **Lançamento manual** para gasto em dinheiro que não passa por CSV nenhum

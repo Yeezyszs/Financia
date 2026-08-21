@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
-import { ApiError, api, tokenStorage } from './api/client.js';
+import type { Session } from '@supabase/supabase-js';
+import { ApiError, api } from './api/client.js';
 import type { Account, Category } from './api/types.js';
-import { TokenGate } from './TokenGate.js';
+import { supabase } from './supabase.js';
+import { Login } from './Login.js';
 import { Overview } from './screens/Overview.js';
 import { Transactions } from './screens/Transactions.js';
 import { History } from './screens/History.js';
@@ -15,7 +17,8 @@ const SCREENS: { id: Screen; label: string }[] = [
 ];
 
 export function App(): ReactNode {
-  const [unlocked, setUnlocked] = useState(() => tokenStorage.get() !== null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
   const [screen, setScreen] = useState<Screen>('overview');
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -23,6 +26,21 @@ export function App(): ReactNode {
   // Trocar a chave remonta as telas — é como o import força o recarregamento
   // dos dados sem cada tela precisar saber que houve import.
   const [dataVersion, setDataVersion] = useState(0);
+
+  useEffect(() => {
+    // A sessão já pode estar no localStorage de uma visita anterior.
+    supabase.auth.getSession().then(({ data }) => {
+      setSession(data.session);
+      setCheckingSession(false);
+    });
+
+    // Login, logout e renovação de token passam por aqui.
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, next) => {
+      setSession(next);
+    });
+
+    return () => subscription.subscription.unsubscribe();
+  }, []);
 
   const loadReferenceData = useCallback(() => {
     Promise.all([api.accounts(), api.categories()])
@@ -32,10 +50,9 @@ export function App(): ReactNode {
         setError(null);
       })
       .catch((err: Error) => {
-        // Token revogado ou trocado: volta para a porta de entrada.
+        // Sessão expirada e não renovável: volta para o login.
         if (err instanceof ApiError && err.status === 401) {
-          tokenStorage.clear();
-          setUnlocked(false);
+          void supabase.auth.signOut();
           return;
         }
         setError(err.message);
@@ -43,12 +60,20 @@ export function App(): ReactNode {
   }, []);
 
   useEffect(() => {
-    if (unlocked) loadReferenceData();
-  }, [unlocked, loadReferenceData]);
+    if (session) loadReferenceData();
+  }, [session, loadReferenceData]);
 
-  if (!unlocked) {
-    return <TokenGate onUnlocked={() => setUnlocked(true)} />;
+  if (checkingSession) {
+    return (
+      <div className="gate">
+        <div className="card gate-card">
+          <span className="skeleton" style={{ display: 'block' }} />
+        </div>
+      </div>
+    );
   }
+
+  if (!session) return <Login />;
 
   return (
     <div className="app">
@@ -65,13 +90,7 @@ export function App(): ReactNode {
             </button>
           ))}
         </nav>
-        <button
-          className="ghost"
-          onClick={() => {
-            tokenStorage.clear();
-            setUnlocked(false);
-          }}
-        >
+        <button className="ghost" onClick={() => void supabase.auth.signOut()}>
           Sair
         </button>
       </header>

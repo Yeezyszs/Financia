@@ -1,11 +1,19 @@
 import { z } from 'zod';
 
+/**
+ * Nada aqui é segredo.
+ *
+ * Com login de verdade, o backend fala com o Supabase usando a anon key
+ * e o JWT do usuário logado — e a anon key é pública por design, feita
+ * para ficar exposta no frontend. Quem protege os dados é o RLS, que
+ * roda dentro do banco.
+ *
+ * A service_role key saiu de cena: ela ignora RLS, e a única razão de
+ * existir aqui era suprir a falta de autenticação.
+ */
 const schema = z.object({
   SUPABASE_URL: z.string().url(),
-  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
-  DEFAULT_USER_ID: z.string().uuid(),
-  /** Trava de acesso da API — ver requireApiToken. Gere com: openssl rand -hex 32 */
-  API_TOKEN: z.string().min(32, 'API_TOKEN precisa de pelo menos 32 caracteres'),
+  SUPABASE_ANON_KEY: z.string().min(1),
   PORT: z.coerce.number().int().positive().default(3333),
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });

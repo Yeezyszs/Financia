@@ -510,10 +510,13 @@ button.ghost {
   line-height: 1.5;
 }
 
+.gate-card .field {
+  width: 100%;
+}
+
 .gate-card input {
   width: 100%;
-  font-family: var(--font-mono);
-  font-size: 13px;
+  min-width: 0;
 }
 
 .dropzone {
