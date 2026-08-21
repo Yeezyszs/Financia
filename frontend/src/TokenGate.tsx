@@ -1,5 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { api, tokenStorage } from './api/client.js';
+import { ApiError, api, tokenStorage } from './api/client.js';
 
 /**
  * Porta de entrada. O token é digitado e guardado no localStorage —
@@ -22,9 +22,19 @@ export function TokenGate({ onUnlocked }: { onUnlocked: () => void }): ReactNode
       // Uma chamada autenticada qualquer serve para validar o token.
       await api.accounts();
       onUnlocked();
-    } catch {
+    } catch (err) {
       tokenStorage.clear();
-      setError('Token não aceito pela API.');
+
+      // Distinguir 401 do resto importa: com a mensagem genérica, uma API
+      // fora do ar ou sem variável de ambiente parece token errado, e o
+      // usuário fica trocando de token sem chance de acertar.
+      if (err instanceof ApiError && err.status === 401) {
+        setError('Token não confere com o configurado no servidor.');
+      } else if (err instanceof ApiError) {
+        setError(`A API respondeu ${err.status}: ${err.message}`);
+      } else {
+        setError('Não consegui falar com a API. Ela pode não estar no ar.');
+      }
     } finally {
       setChecking(false);
     }
