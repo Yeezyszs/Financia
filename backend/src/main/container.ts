@@ -15,9 +15,12 @@ import { ListAccountsUseCase } from '../application/use-cases/accounts/ListAccou
 import { ListTransactionsUseCase } from '../application/use-cases/transactions/ListTransactionsUseCase.js';
 import { ImportStatementUseCase } from '../application/use-cases/imports/ImportStatementUseCase.js';
 import { ListImportsUseCase } from '../application/use-cases/imports/ListImportsUseCase.js';
+import { GetOverviewUseCase } from '../application/use-cases/reports/GetOverviewUseCase.js';
+import { ListCategoriesUseCase } from '../application/use-cases/categories/ListCategoriesUseCase.js';
 import { AccountController } from '../interface-adapters/controllers/AccountController.js';
 import { TransactionController } from '../interface-adapters/controllers/TransactionController.js';
 import { ImportController } from '../interface-adapters/controllers/ImportController.js';
+import { ReportController } from '../interface-adapters/controllers/ReportController.js';
 
 /**
  * Composition root: o único lugar do sistema que conhece todas as camadas.
@@ -29,6 +32,7 @@ export interface Container {
     accounts: AccountController;
     transactions: TransactionController;
     imports: ImportController;
+    reports: ReportController;
   };
 }
 
@@ -64,6 +68,8 @@ export function buildContainer(env: Env): Container {
     hasher,
   );
   const listImports = new ListImportsUseCase(importRepository);
+  const getOverview = new GetOverviewUseCase(transactionRepository, categoryRepository);
+  const listCategories = new ListCategoriesUseCase(categoryRepository);
 
   return {
     db,
@@ -71,6 +77,7 @@ export function buildContainer(env: Env): Container {
       accounts: new AccountController(createAccount, listAccounts),
       transactions: new TransactionController(listTransactions),
       imports: new ImportController(importStatement, listImports),
+      reports: new ReportController(getOverview, listCategories),
     },
   };
 }

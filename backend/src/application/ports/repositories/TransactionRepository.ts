@@ -20,7 +20,9 @@ export interface Paginated<T> {
 
 export interface CategoryTotal {
   categoryId: string | null;
-  totalCents: number;
+  /** Entrada e saída separadas: estorno não vira "receita" da categoria. */
+  incomeCents: number;
+  expenseCents: number;
   count: number;
 }
 

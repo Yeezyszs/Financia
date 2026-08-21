@@ -110,13 +110,19 @@ export class SupabaseTransactionRepository implements TransactionRepository {
     });
     if (error) throw error;
 
-    return (data as { category_id: string | null; total_cents: number; tx_count: number }[]).map(
-      (row) => ({
-        categoryId: row.category_id,
-        totalCents: Number(row.total_cents),
-        count: Number(row.tx_count),
-      }),
-    );
+    return (
+      data as {
+        category_id: string | null;
+        income_cents: number;
+        expense_cents: number;
+        tx_count: number;
+      }[]
+    ).map((row) => ({
+      categoryId: row.category_id,
+      incomeCents: Number(row.income_cents),
+      expenseCents: Number(row.expense_cents),
+      count: Number(row.tx_count),
+    }));
   }
 
   async monthlyTotals(userId: string, year: number): Promise<MonthlyTotal[]> {

@@ -2,7 +2,7 @@
 
 Controle financeiro pessoal alimentado por **importação de CSV** dos apps do banco — não por lançamento manual transação a transação.
 
-> Status: **Fases 1 e 2** concluídas — schema no ar, backend estruturado e ingestão de CSV do Nubank funcionando (extrato e fatura, com dedupe e categorização automática). Falta a UI.
+> Status: **MVP completo** — schema no ar, ingestão de CSV do Nubank (extrato e fatura, com dedupe e categorização automática) e as três telas: Visão Geral, Transações e Histórico.
 
 ## Stack
 
@@ -14,6 +14,12 @@ Controle financeiro pessoal alimentado por **importação de CSV** dos apps do b
 
 ```
 supabase/migrations/     # schema versionado (SQL)
+api/index.ts             # function da Vercel: serve a app Express em /api/*
+frontend/                # React + Vite (SPA)
+  src/
+    api/                 #   client HTTP + tipos da API
+    components/          #   graficos em SVG e tooltip
+    screens/             #   Visao Geral, Transacoes, Historico
 backend/
   src/
     domain/              # 1. Entidades e regras de negócio puras
@@ -72,12 +78,14 @@ select seed_user_defaults('<auth-user-id>');
 ## Rodando o backend
 
 ```bash
-cd backend
-cp .env.example .env    # preencher SUPABASE_URL, SERVICE_ROLE_KEY, DEFAULT_USER_ID
-npm install
-npm run dev             # http://localhost:3333
-npm test                # testes de domínio
-npm run typecheck
+cp backend/.env.example backend/.env   # SUPABASE_URL, SERVICE_ROLE_KEY, API_TOKEN, DEFAULT_USER_ID
+npm install                            # workspaces: instala backend e frontend
+
+npm run dev:api    # API em http://localhost:3333
+npm run dev        # UI em http://localhost:5173 (proxy /api -> 3333)
+
+npm test           # testes do backend
+npm run typecheck  # backend + frontend
 ```
 
 O `.env` nunca vai para o git (`backend/.gitignore`). A `service_role` key ignora RLS por completo — ela só existe no backend, nunca no frontend, que usará a anon key.
@@ -123,7 +131,7 @@ O caminho de um arquivo: **parser do banco → fingerprint por linha → descart
 
 GitHub Pages não serve para o backend — é hospedagem estática, não roda Node nem guarda secret, e a `service_role` key não pode viver num bundle de frontend. Na Vercel os dois convivem: o React como estático e o Express como serverless function.
 
-1. Importar o repositório na Vercel e definir **Root Directory = `backend`**
+1. Importar o repositório na Vercel deixando o **Root Directory na raiz** do repo
 2. Cadastrar as variáveis de ambiente (Settings → Environment Variables):
 
 | variável | valor |
@@ -134,12 +142,27 @@ GitHub Pages não serve para o backend — é hospedagem estática, não roda No
 | `DEFAULT_USER_ID` | id do usuário no `auth.users` |
 | `NODE_ENV` | `production` |
 
-`vercel.json` reescreve `/api/(.*)` para a function em `api/index.ts`, que é a mesma app Express do `npm run dev` — nenhuma rota é duplicada em configuração.
+`vercel.json` faz o build do frontend (`frontend/dist`) e reescreve `/api/(.*)` para a function em `api/index.ts`, que é a mesma app Express do dev. Frontend e API saem do **mesmo domínio**: sem CORS e sem token atravessando origem.
 
 **Sobre o `API_TOKEN`:** o backend fala com o Supabase usando a `service_role`, que ignora RLS. Uma URL pública sem trava seria acesso total às finanças para quem descobrisse o endereço. O token é o substituto temporário até entrar login de verdade (Supabase Auth), quando só o middleware `currentUser` muda.
 
-## Próximas fases
+O token **não** vai embutido no bundle do frontend — isso o tornaria público, já que qualquer um baixa o JS. Ele é digitado na tela de entrada e fica no `localStorage` do navegador.
 
-3. **Reconciliação fatura x conta** — linkar as duas pontas do pagamento de fatura (`counterpart_transaction_id`); hoje as duas já ficam fora dos totais, falta o link explícito
-4. **Categorização** — CRUD de regras na API e o "lembrar essa categoria" ao corrigir uma transação
-5. **Frontend** — React na Vercel: Visão Geral, Transações, Histórico e o upload de CSV
+## Frontend
+
+Três telas, sem dependência de UI além do React — os gráficos são SVG escrito à mão:
+
+- **Visão Geral** — receitas, despesas e saldo do mês; evolução mensal do ano (barras agrupadas, com tooltip por mês) e despesas por categoria (barras ordenadas)
+- **Transações** — tabela com filtros de conta, categoria, período e busca (com debounce), paginada
+- **Histórico** — upload do CSV por drag-and-drop, resultado da importação e o log de tudo que já entrou, inclusive o que falhou
+
+**Cores dos gráficos.** Azul para receitas, laranja para despesas, nos dois modos (claro e escuro). O par foi validado para daltonismo: ΔE ≥ 24 sob protanopia e deuteranopia e ≥ 3:1 de contraste contra a superfície — separação bem acima do piso, então a leitura não depende de distinguir as duas cores. As barras de categoria usam uma cor só: ali quem carrega a identidade é o rótulo, e oito hues indistinguíveis não informariam nada a mais.
+
+## O que vem depois do MVP
+
+- **Editar a categoria de uma transação pela UI** + "lembrar essa categoria" (cria uma regra `learned`) — hoje a categorização é só automática, corrigir exige mexer no banco
+- **Reconciliação explícita fatura x conta** — linkar as duas pontas do pagamento (`counterpart_transaction_id`); hoje as duas já ficam fora dos totais, falta o link
+- **Login de verdade** (Supabase Auth) no lugar do `API_TOKEN`
+- **Metas e Parcelas** — tabelas prontas, sem UI
+- **Adapter do C6** — a porta existe, falta um export real
+- **Lançamento manual** para gasto em dinheiro que não passa por CSV nenhum
