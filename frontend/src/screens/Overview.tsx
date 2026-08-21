@@ -1,8 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api/client.js';
-import type { Overview as OverviewData } from '../api/types.js';
+import type { Overview as OverviewData, Snapshot } from '../api/types.js';
 import { CategoryChart } from '../components/CategoryChart.js';
 import { MonthlyChart } from '../components/MonthlyChart.js';
+import { RecurringCard } from '../components/RecurringCard.js';
+import { TrendList } from '../components/TrendList.js';
 import { money, monthRange } from '../format.js';
 import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 
@@ -26,6 +28,7 @@ export function Overview(): ReactNode {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [data, setData] = useState<OverviewData | null>(null);
+  const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const isMobile = useMediaQuery(MOBILE);
@@ -46,6 +49,27 @@ export function Overview(): ReactNode {
       })
       .finally(() => {
         if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [year, month]);
+
+  // O retrato analítico é uma chamada separada de propósito: ele varre
+  // seis meses e não deve segurar a renderização dos totais do mês.
+  useEffect(() => {
+    let active = true;
+    const referencia = `${year}-${String(month).padStart(2, '0')}`;
+
+    api
+      .snapshot({ month: referencia, months: 6 })
+      .then((result) => {
+        if (active) setSnapshot(result);
+      })
+      .catch(() => {
+        // A análise é complementar: se falhar, a Visão Geral continua de pé.
+        if (active) setSnapshot(null);
       });
 
     return () => {
@@ -150,6 +174,34 @@ export function Overview(): ReactNode {
             </div>
           ) : (
             <CategoryChart data={data?.expensesByCategory ?? []} />
+          )}
+        </div>
+      </div>
+
+      <div className="chart-grid" style={{ marginTop: 14 }}>
+        <div className="card">
+          <h2 className="card-title">Gastos recorrentes · últimos 6 meses</h2>
+          {snapshot ? (
+            <RecurringCard snapshot={snapshot} />
+          ) : (
+            <div className="stack">
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="skeleton" />
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="card">
+          <h2 className="card-title">O que mudou neste mês</h2>
+          {snapshot ? (
+            <TrendList trends={snapshot.trends} />
+          ) : (
+            <div className="stack">
+              {[0, 1, 2].map((i) => (
+                <span key={i} className="skeleton" />
+              ))}
+            </div>
           )}
         </div>
       </div>

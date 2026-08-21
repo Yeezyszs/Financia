@@ -94,3 +94,40 @@ export interface TransactionQuery {
   limit?: number;
   offset?: number;
 }
+
+export interface RecurringItem {
+  key: string;
+  label: string;
+  kind: 'subscription' | 'recurring';
+  occurrences: number;
+  monthsSeen: number;
+  typicalCents: number;
+  monthlyAverageCents: number;
+  firstSeen: string;
+  lastSeen: string;
+  categoryId: string | null;
+  categoryName: string | null;
+}
+
+export interface CategoryTrend {
+  categoryId: string | null;
+  name: string;
+  currentCents: number;
+  averageCents: number;
+  changePercent: number;
+  series: { month: string; expenseCents: number }[];
+}
+
+export interface Snapshot {
+  period: { from: string; to: string; referenceMonth: string };
+  months: number;
+  income: { totalCents: number; monthlyAverageCents: number };
+  expense: { totalCents: number; monthlyAverageCents: number };
+  fixedMonthlyCents: number;
+  variableMonthlyCents: number;
+  subscriptions: RecurringItem[];
+  recurring: RecurringItem[];
+  trends: CategoryTrend[];
+  topMerchants: { label: string; totalCents: number; count: number }[];
+  transactionCount: number;
+}

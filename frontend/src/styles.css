@@ -765,3 +765,76 @@ button.ghost {
     gap: 10px;
   }
 }
+
+/* ------------------------------------------------------- análise (fase 7) */
+.split-bar {
+  height: 10px;
+  border-radius: 5px;
+  background: var(--series-expense);
+  overflow: hidden;
+  display: flex;
+}
+
+/* Fixo em azul, variável em laranja: mesma paleta validada dos gráficos,
+   e a ordem é sempre a mesma para a barra ser comparável entre meses. */
+.split-fixo {
+  display: block;
+  height: 100%;
+  background: var(--series-income);
+  border-right: 2px solid var(--surface-1);
+}
+
+.split-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.split-legend b {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.rec-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+
+.rec-row:last-child {
+  border-bottom: 0;
+}
+
+.rec-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rec-meta {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.delta {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* Gastar mais é o alerta; gastar menos é o resultado bom. Cores das
+   séries, não semáforo — vermelho/verde falha em daltonismo, e o sinal
+   já vem escrito no + e no −. */
+.delta-up {
+  color: var(--series-expense);
+}
+
+.delta-down {
+  color: var(--series-income);
+}

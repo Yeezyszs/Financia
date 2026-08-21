@@ -8,6 +8,7 @@ import type { CategoryRepository } from '../../src/application/ports/repositorie
 import type { CategoryRuleRepository } from '../../src/application/ports/repositories/CategoryRuleRepository.js';
 import type { ImportRepository } from '../../src/application/ports/repositories/ImportRepository.js';
 import type {
+  CategoryMonthPoint,
   CategoryTotal,
   MonthlyTotal,
   Paginated,
@@ -103,6 +104,19 @@ export class InMemoryTransactionRepository implements TransactionRepository {
   }
   async monthlyTotals(): Promise<MonthlyTotal[]> {
     return [];
+  }
+  async categorySeries(): Promise<CategoryMonthPoint[]> {
+    return [];
+  }
+  async listForAnalysis(userId: string, from: string, to: string) {
+    return this.transactions
+      .filter((t) => t.userId === userId && t.occurredOn >= from && t.occurredOn <= to)
+      .map((t) => ({
+        occurredOn: t.occurredOn,
+        description: t.description,
+        amountCents: t.amount.cents,
+        categoryId: t.categoryId,
+      }));
   }
 }
 

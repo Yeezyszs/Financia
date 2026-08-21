@@ -1,12 +1,14 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Transaction } from '../../../../domain/entities/Transaction.js';
 import type {
+  CategoryMonthPoint,
   CategoryTotal,
   MonthlyTotal,
   Paginated,
   TransactionFilters,
   TransactionRepository,
 } from '../../../../application/ports/repositories/TransactionRepository.js';
+import type { AnalyzableTransaction } from '../../../../domain/analysis/RecurringDetector.js';
 import { TransactionMapper, type TransactionRow } from '../mappers/TransactionMapper.js';
 
 const TABLE = 'transactions';
@@ -122,6 +124,59 @@ export class SupabaseTransactionRepository implements TransactionRepository {
       incomeCents: Number(row.income_cents),
       expenseCents: Number(row.expense_cents),
       count: Number(row.tx_count),
+    }));
+  }
+
+  async categorySeries(userId: string, from: string, to: string): Promise<CategoryMonthPoint[]> {
+    const { data, error } = await this.db.rpc('transactions_category_series', {
+      p_user_id: userId,
+      p_from: from,
+      p_to: to,
+    });
+    if (error) throw error;
+
+    return (
+      data as {
+        month: string;
+        category_id: string | null;
+        income_cents: number;
+        expense_cents: number;
+        tx_count: number;
+      }[]
+    ).map((row) => ({
+      month: row.month,
+      categoryId: row.category_id,
+      incomeCents: Number(row.income_cents),
+      expenseCents: Number(row.expense_cents),
+      count: Number(row.tx_count),
+    }));
+  }
+
+  async listForAnalysis(userId: string, from: string, to: string): Promise<AnalyzableTransaction[]> {
+    // Sem paginação de propósito: a análise precisa do período inteiro, e
+    // são poucos milhares de linhas com quatro colunas.
+    const { data, error } = await this.db
+      .from(TABLE)
+      .select('occurred_on, description, amount_cents, category_id')
+      .eq('user_id', userId)
+      .eq('is_transfer', false)
+      .gte('occurred_on', from)
+      .lte('occurred_on', to)
+      .order('occurred_on', { ascending: true });
+    if (error) throw error;
+
+    return (
+      data as {
+        occurred_on: string;
+        description: string;
+        amount_cents: number;
+        category_id: string | null;
+      }[]
+    ).map((row) => ({
+      occurredOn: row.occurred_on,
+      description: row.description,
+      amountCents: Number(row.amount_cents),
+      categoryId: row.category_id,
     }));
   }
 

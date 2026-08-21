@@ -16,6 +16,7 @@ import { ImportStatementUseCase } from '../application/use-cases/imports/ImportS
 import { ListImportsUseCase } from '../application/use-cases/imports/ListImportsUseCase.js';
 import { GetOverviewUseCase } from '../application/use-cases/reports/GetOverviewUseCase.js';
 import { ListCategoriesUseCase } from '../application/use-cases/categories/ListCategoriesUseCase.js';
+import { GetFinancialSnapshotUseCase } from '../application/use-cases/insights/GetFinancialSnapshotUseCase.js';
 import { AccountController } from '../interface-adapters/controllers/AccountController.js';
 import { TransactionController } from '../interface-adapters/controllers/TransactionController.js';
 import { ImportController } from '../interface-adapters/controllers/ImportController.js';
@@ -64,11 +65,12 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
   const listImports = new ListImportsUseCase(importRepository);
   const getOverview = new GetOverviewUseCase(transactionRepository, categoryRepository);
   const listCategories = new ListCategoriesUseCase(categoryRepository);
+  const getSnapshot = new GetFinancialSnapshotUseCase(transactionRepository, categoryRepository);
 
   return {
     accounts: new AccountController(createAccount, listAccounts),
     transactions: new TransactionController(listTransactions),
     imports: new ImportController(importStatement, listImports),
-    reports: new ReportController(getOverview, listCategories),
+    reports: new ReportController(getOverview, listCategories, getSnapshot),
   };
 }

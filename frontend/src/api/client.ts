@@ -5,6 +5,7 @@ import type {
   ImportRecord,
   ImportResult,
   Overview,
+  Snapshot,
   Transaction,
   TransactionQuery,
 } from './types.js';
@@ -109,6 +110,9 @@ export const api = {
 
   createAccount: (body: { name: string; type: Account['type']; institution?: string }) =>
     request<Account>('/accounts', { method: 'POST', body: JSON.stringify(body) }),
+
+  snapshot: (query: { month?: string; months?: number } = {}) =>
+    request<Snapshot>(`/reports/snapshot${toQueryString(query)}`),
 
   imports: () => request<ImportRecord[]>('/imports'),
 

@@ -1,4 +1,5 @@
 import type { Transaction } from '../../../domain/entities/Transaction.js';
+import type { AnalyzableTransaction } from '../../../domain/analysis/RecurringDetector.js';
 
 export interface TransactionFilters {
   accountIds?: string[];
@@ -33,6 +34,15 @@ export interface MonthlyTotal {
   expenseCents: number;
 }
 
+export interface CategoryMonthPoint {
+  /** YYYY-MM */
+  month: string;
+  categoryId: string | null;
+  incomeCents: number;
+  expenseCents: number;
+  count: number;
+}
+
 export interface TransactionRepository {
   findById(userId: string, id: string): Promise<Transaction | null>;
   list(userId: string, filters: TransactionFilters): Promise<Paginated<Transaction>>;
@@ -47,4 +57,13 @@ export interface TransactionRepository {
   /** Agregações do dashboard — feitas no banco, não em memória. */
   totalsByCategory(userId: string, filters: TransactionFilters): Promise<CategoryTotal[]>;
   monthlyTotals(userId: string, year: number): Promise<MonthlyTotal[]>;
+
+  /** Série mensal por categoria no intervalo — base da análise de tendência. */
+  categorySeries(userId: string, from: string, to: string): Promise<CategoryMonthPoint[]>;
+
+  /**
+   * Transações cruas do período, só o necessário para analisar. Não passa
+   * por paginação: quem chama é a análise, que precisa do conjunto todo.
+   */
+  listForAnalysis(userId: string, from: string, to: string): Promise<AnalyzableTransaction[]>;
 }

@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import type { GetOverviewUseCase } from '../../application/use-cases/reports/GetOverviewUseCase.js';
 import type { ListCategoriesUseCase } from '../../application/use-cases/categories/ListCategoriesUseCase.js';
+import type { GetFinancialSnapshotUseCase } from '../../application/use-cases/insights/GetFinancialSnapshotUseCase.js';
 import { CategoryPresenter } from '../presenters/CategoryPresenter.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -29,11 +30,34 @@ function currentMonthRange(today = new Date()): { from: string; to: string } {
   };
 }
 
+const snapshotSchema = z.object({
+  month: z
+    .string()
+    .regex(/^\d{4}-\d{2}$/)
+    .optional(),
+  months: z.coerce.number().int().min(2).max(24).optional(),
+});
+
 export class ReportController {
   constructor(
     private readonly getOverview: GetOverviewUseCase,
     private readonly listCategories: ListCategoriesUseCase,
+    private readonly getSnapshot: GetFinancialSnapshotUseCase,
   ) {}
+
+  snapshot = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const query = snapshotSchema.parse(req.query);
+      const data = await this.getSnapshot.execute({
+        userId: req.userId,
+        referenceMonth: query.month ?? currentMonthRange().from.slice(0, 7),
+        ...(query.months ? { months: query.months } : {}),
+      });
+      res.json({ data });
+    } catch (error) {
+      next(error);
+    }
+  };
 
   overview = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
