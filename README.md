@@ -56,8 +56,11 @@ Migrations em `supabase/migrations/`, aplicadas em ordem:
 | `0002_goals_installments.sql` | metas e parcelas (stub das telas do protótipo) |
 | `0003_seed_defaults.sql` | `seed_user_defaults(user_id)` — categorias e regras iniciais, idempotente |
 | `0004_report_functions.sql` | agregações do dashboard (por categoria, mensal) |
+| `0005_hardening.sql` | search_path fixo, pg_trgm fora do public, funções fora do alcance da anon key |
 
-Aplicar via Supabase CLI (`supabase db push`) ou colando no SQL Editor. Depois de criar o usuário no Auth:
+O projeto **Financia** (`mmijyibobnigjtirzzja`, região us-west-2) já está com as 5 migrations aplicadas, RLS ligada nas 9 tabelas, o usuário single-user criado e semeado (15 categorias, 25 regras) e as duas contas do MVP prontas: `Nubank Conta Corrente` e `Nubank Cartão de Crédito` (essa última já apontando para a conta corrente que quita a fatura).
+
+Para um ambiente novo, aplicar as migrations em ordem (`supabase db push` ou SQL Editor) e depois:
 
 ```sql
 insert into users (id, email, name) values ('<auth-user-id>', '<email>', 'Pedro');
@@ -74,6 +77,8 @@ npm run dev             # http://localhost:3333
 npm test                # testes de domínio
 npm run typecheck
 ```
+
+O `.env` nunca vai para o git (`backend/.gitignore`). A `service_role` key ignora RLS por completo — ela só existe no backend, nunca no frontend, que usará a anon key.
 
 Endpoints da fundação: `GET /api/health`, `GET /api/accounts`, `POST /api/accounts`, `GET /api/transactions` (com filtros de conta, categoria, período e busca).
 

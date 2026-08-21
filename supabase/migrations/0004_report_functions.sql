@@ -12,6 +12,7 @@ create or replace function transactions_totals_by_category(
 returns table (category_id uuid, total_cents bigint, tx_count bigint)
 language sql
 stable
+set search_path = public
 as $$
   select t.category_id,
          sum(t.amount_cents)::bigint as total_cents,
@@ -32,6 +33,7 @@ create or replace function transactions_monthly_totals(
 returns table (month text, income_cents bigint, expense_cents bigint)
 language sql
 stable
+set search_path = public
 as $$
   select to_char(t.occurred_on, 'YYYY-MM') as month,
          coalesce(sum(t.amount_cents) filter (where t.amount_cents > 0), 0)::bigint as income_cents,
