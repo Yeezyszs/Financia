@@ -131,7 +131,10 @@ O caminho de um arquivo: **parser do banco → fingerprint por linha → descart
 
 GitHub Pages não serve para o backend — é hospedagem estática, não roda Node nem guarda secret, e a `service_role` key não pode viver num bundle de frontend. Na Vercel os dois convivem: o React como estático e o Express como serverless function.
 
-1. Importar o repositório na Vercel deixando o **Root Directory na raiz** do repo
+1. Importar o repositório na Vercel deixando o **Root Directory vazio (a raiz do repo)**.
+   Apontar para `frontend/` não funciona: o `vercel.json` e a pasta `api/` ficam
+   fora do escopo do build, e o deploy sai sem backend nenhum — a SPA carrega e
+   toma 404 em toda chamada de `/api`.
 2. Cadastrar as variáveis de ambiente (Settings → Environment Variables):
 
 | variável | valor |
@@ -141,6 +144,11 @@ GitHub Pages não serve para o backend — é hospedagem estática, não roda No
 | `API_TOKEN` | `openssl rand -hex 32` |
 | `DEFAULT_USER_ID` | id do usuário no `auth.users` |
 | `NODE_ENV` | `production` |
+
+As dependências de runtime (`express`, `zod`, `@supabase/supabase-js`) são declaradas
+no `package.json` da **raiz**, não só no do backend: a function mora na raiz e precisa
+resolvê-las a partir dali. Declaradas apenas no workspace, o npm as instala aninhadas
+em `backend/node_modules/` e a function não as encontra.
 
 `vercel.json` faz o build do frontend (`frontend/dist`) e reescreve `/api/(.*)` para a function em `api/index.ts`, que é a mesma app Express do dev. Frontend e API saem do **mesmo domínio**: sem CORS e sem token atravessando origem.
 
