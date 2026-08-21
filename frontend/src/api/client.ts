@@ -50,6 +50,12 @@ export class ApiError extends Error {
   }
 }
 
+/** Erro 500 carrega `detail` com a causa real — mostrar isso poupa ida ao log. */
+function describe(error: { message?: string; code?: string; detail?: string } | undefined, status: number): string {
+  if (!error) return `Falha na requisição (${status})`;
+  return error.detail ? `${error.message ?? 'Erro'}: ${error.detail}` : (error.message ?? `Falha (${status})`);
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = tokenStorage.get();
 
@@ -66,12 +72,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const payload = text ? (JSON.parse(text) as Record<string, unknown>) : {};
 
   if (!response.ok) {
-    const error = payload.error as { message?: string; code?: string } | undefined;
-    throw new ApiError(
-      error?.message ?? `Falha na requisição (${response.status})`,
-      response.status,
-      error?.code,
-    );
+    const error = payload.error as { message?: string; code?: string; detail?: string } | undefined;
+    throw new ApiError(describe(error, response.status), response.status, error?.code);
   }
 
   return (payload as { data: T }).data;
@@ -89,12 +91,8 @@ async function requestPage<T>(path: string): Promise<{ data: T; meta: PageMeta }
   const payload = text ? (JSON.parse(text) as Record<string, unknown>) : {};
 
   if (!response.ok) {
-    const error = payload.error as { message?: string; code?: string } | undefined;
-    throw new ApiError(
-      error?.message ?? `Falha na requisição (${response.status})`,
-      response.status,
-      error?.code,
-    );
+    const error = payload.error as { message?: string; code?: string; detail?: string } | undefined;
+    throw new ApiError(describe(error, response.status), response.status, error?.code);
   }
 
   return payload as { data: T; meta: PageMeta };
