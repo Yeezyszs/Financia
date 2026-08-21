@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Backend do Financia \u2014 controle financeiro pessoal (Clean Architecture)",
+  "description": "Backend do Financia — controle financeiro pessoal (Clean Architecture)",
   "engines": {
     "node": ">=20"
   },
@@ -24,6 +24,8 @@
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/node": "^22.5.0",
+    "@types/supertest": "^7.2.1",
+    "supertest": "^7.2.2",
     "tsx": "^4.19.0",
     "typescript": "^5.6.2",
     "vitest": "^2.1.1"
