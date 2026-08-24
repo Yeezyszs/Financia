@@ -58,6 +58,22 @@ export interface TransactionRepository {
   totalsByCategory(userId: string, filters: TransactionFilters): Promise<CategoryTotal[]>;
   monthlyTotals(userId: string, year: number): Promise<MonthlyTotal[]>;
 
+  /**
+   * Transações que uma regra aprendida pode reclassificar: tudo que não
+   * foi categorizado à mão. Traz só o necessário para casar o padrão.
+   */
+  listRecategorizable(
+    userId: string,
+  ): Promise<{ id: string; description: string; categoryId: string | null }[]>;
+
+  /** Aplica uma categoria a várias transações de uma vez. */
+  setCategoryForMany(
+    userId: string,
+    ids: string[],
+    categoryId: string,
+    isTransfer: boolean,
+  ): Promise<void>;
+
   /** Série mensal por categoria no intervalo — base da análise de tendência. */
   categorySeries(userId: string, from: string, to: string): Promise<CategoryMonthPoint[]>;
 

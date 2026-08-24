@@ -111,6 +111,12 @@ export const api = {
   createAccount: (body: { name: string; type: Account['type']; institution?: string }) =>
     request<Account>('/accounts', { method: 'POST', body: JSON.stringify(body) }),
 
+  categorizeTransaction: (id: string, body: { categoryId: string | null; remember?: boolean }) =>
+    request<{ transaction: Transaction; learnedPattern: string | null; alsoUpdated: number }>(
+      `/transactions/${id}/category`,
+      { method: 'PATCH', body: JSON.stringify(body) },
+    ),
+
   snapshot: (query: { month?: string; months?: number } = {}) =>
     request<Snapshot>(`/reports/snapshot${toQueryString(query)}`),
 
@@ -127,10 +133,7 @@ export const api = {
       // O status vai na mensagem: "tente de novo" não distingue rota
       // ausente de sessão expirada, e manda o usuário repetir algo que
       // nunca vai funcionar.
-      throw new ApiError(
-        `A API respondeu ${response.status} ao gerar o resumo.`,
-        response.status,
-      );
+      throw new ApiError(`A API respondeu ${response.status} ao gerar o resumo.`, response.status);
     }
 
     return response.text();

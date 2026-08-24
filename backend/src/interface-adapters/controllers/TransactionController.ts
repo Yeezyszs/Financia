@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import type { ListTransactionsUseCase } from '../../application/use-cases/transactions/ListTransactionsUseCase.js';
+import type { CategorizeTransactionUseCase } from '../../application/use-cases/transactions/CategorizeTransactionUseCase.js';
 import { TransactionPresenter } from '../presenters/TransactionPresenter.js';
 
 const csv = z
@@ -26,8 +27,40 @@ const listSchema = z.object({
   offset: z.coerce.number().int().nonnegative().optional(),
 });
 
+const categorizeSchema = z.object({
+  categoryId: z.string().uuid().nullable(),
+  remember: z.boolean().optional(),
+});
+
 export class TransactionController {
-  constructor(private readonly listTransactions: ListTransactionsUseCase) {}
+  constructor(
+    private readonly listTransactions: ListTransactionsUseCase,
+    private readonly categorizeTransaction: CategorizeTransactionUseCase,
+  ) {}
+
+  categorize = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const body = categorizeSchema.parse(req.body);
+      const id = z.string().uuid().parse(req.params.id);
+
+      const result = await this.categorizeTransaction.execute({
+        userId: req.userId,
+        transactionId: id,
+        categoryId: body.categoryId,
+        ...(body.remember === undefined ? {} : { remember: body.remember }),
+      });
+
+      res.json({
+        data: {
+          transaction: TransactionPresenter.toHttp(result.transaction),
+          learnedPattern: result.learnedPattern,
+          alsoUpdated: result.alsoUpdated,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
 
   list = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

@@ -127,6 +127,44 @@ export class SupabaseTransactionRepository implements TransactionRepository {
     }));
   }
 
+  async listRecategorizable(
+    userId: string,
+  ): Promise<{ id: string; description: string; categoryId: string | null }[]> {
+    const { data, error } = await this.db
+      .from(TABLE)
+      .select('id, description, category_id')
+      .eq('user_id', userId)
+      // Decisão manual anterior é informação: uma regra aprendida não
+      // deve desfazer o que a pessoa já escolheu à mão.
+      .neq('categorized_by', 'manual');
+    if (error) throw error;
+
+    return (data as { id: string; description: string; category_id: string | null }[]).map(
+      (row) => ({ id: row.id, description: row.description, categoryId: row.category_id }),
+    );
+  }
+
+  async setCategoryForMany(
+    userId: string,
+    ids: string[],
+    categoryId: string,
+    isTransfer: boolean,
+  ): Promise<void> {
+    if (ids.length === 0) return;
+
+    const { error } = await this.db
+      .from(TABLE)
+      .update({
+        category_id: categoryId,
+        categorized_by: 'rule',
+        is_transfer: isTransfer,
+        ...(isTransfer ? {} : { counterpart_transaction_id: null }),
+      })
+      .eq('user_id', userId)
+      .in('id', ids);
+    if (error) throw error;
+  }
+
   async categorySeries(userId: string, from: string, to: string): Promise<CategoryMonthPoint[]> {
     const { data, error } = await this.db.rpc('transactions_category_series', {
       p_user_id: userId,
@@ -152,7 +190,11 @@ export class SupabaseTransactionRepository implements TransactionRepository {
     }));
   }
 
-  async listForAnalysis(userId: string, from: string, to: string): Promise<AnalyzableTransaction[]> {
+  async listForAnalysis(
+    userId: string,
+    from: string,
+    to: string,
+  ): Promise<AnalyzableTransaction[]> {
     // Sem paginação de propósito: a análise precisa do período inteiro, e
     // são poucos milhares de linhas com quatro colunas.
     const { data, error } = await this.db

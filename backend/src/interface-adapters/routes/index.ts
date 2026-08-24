@@ -37,6 +37,11 @@ export function buildRoutes(route: ControllerResolver): Router {
     route((c) => c.transactions.list),
   );
 
+  router.patch(
+    '/transactions/:id/category',
+    route((c) => c.transactions.categorize),
+  );
+
   router.get(
     '/imports',
     route((c) => c.imports.list),

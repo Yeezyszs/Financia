@@ -4,8 +4,18 @@ import type {
 } from '../../application/use-cases/insights/GetFinancialSnapshotUseCase.js';
 
 const MESES = [
-  'janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
-  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro',
+  'janeiro',
+  'fevereiro',
+  'março',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
 ];
 
 function reais(cents: number): string {
@@ -64,9 +74,7 @@ export function snapshotToMarkdown(snapshot: FinancialSnapshot): string {
     ? `${mesPorExtenso(primeiro)} a ${ref}`
     : `${snapshot.months} meses até ${ref}`;
 
-  const mesAtual = snapshot.monthlySeries.find(
-    (m) => m.month === snapshot.period.referenceMonth,
-  );
+  const mesAtual = snapshot.monthlySeries.find((m) => m.month === snapshot.period.referenceMonth);
   const despesaMedia = snapshot.expense.monthlyAverageCents;
   const assinaturasAtivas = snapshot.subscriptions.filter(
     (item) => item.lastSeen.slice(0, 7) >= snapshot.period.referenceMonth,

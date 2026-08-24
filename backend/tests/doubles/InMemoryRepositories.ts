@@ -105,6 +105,18 @@ export class InMemoryTransactionRepository implements TransactionRepository {
   async monthlyTotals(): Promise<MonthlyTotal[]> {
     return [];
   }
+  async listRecategorizable(userId: string) {
+    return this.transactions
+      .filter((t) => t.userId === userId && t.categorizedBy !== 'manual')
+      .map((t) => ({ id: t.id, description: t.description, categoryId: t.categoryId }));
+  }
+  async setCategoryForMany(userId: string, ids: string[], categoryId: string, isTransfer: boolean) {
+    this.transactions = this.transactions.map((t) => {
+      if (t.userId !== userId || !ids.includes(t.id)) return t;
+      const comCategoria = t.categorize(categoryId, 'rule');
+      return isTransfer ? comCategoria.markAsTransfer() : comCategoria.asRegularEntry();
+    });
+  }
   async categorySeries(): Promise<CategoryMonthPoint[]> {
     return [];
   }
@@ -136,6 +148,9 @@ export class InMemoryCategoryRepository implements CategoryRepository {
     return category;
   }
   async update(category: Category) {
+    this.categories = this.categories.map((atual) =>
+      atual.id === category.id ? category : atual,
+    );
     return category;
   }
   async delete() {}
@@ -150,11 +165,25 @@ export class InMemoryCategoryRuleRepository implements CategoryRuleRepository {
   async findById(userId: string, id: string) {
     return this.rules.find((r) => r.userId === userId && r.id === id) ?? null;
   }
+  async findByPattern(userId: string, pattern: string, matchType: CategoryRule['matchType']) {
+    return (
+      this.rules.find(
+        (r) =>
+          r.userId === userId &&
+          r.pattern === pattern &&
+          r.matchType === matchType &&
+          r.accountId === null,
+      ) ?? null
+    );
+  }
   async create(rule: CategoryRule) {
     this.rules.push(rule);
     return rule;
   }
   async update(rule: CategoryRule) {
+    // Precisa substituir de fato: um dublê que aceita o update e guarda o
+    // valor antigo esconde justamente o bug que o teste procura.
+    this.rules = this.rules.map((atual) => (atual.id === rule.id ? rule : atual));
     return rule;
   }
   async delete() {}

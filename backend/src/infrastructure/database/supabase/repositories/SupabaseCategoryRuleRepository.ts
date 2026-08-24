@@ -30,6 +30,23 @@ export class SupabaseCategoryRuleRepository implements CategoryRuleRepository {
     return data ? CategoryRuleMapper.toDomain(data as CategoryRuleRow) : null;
   }
 
+  async findByPattern(
+    userId: string,
+    pattern: string,
+    matchType: CategoryRule['matchType'],
+  ): Promise<CategoryRule | null> {
+    const { data, error } = await this.db
+      .from(TABLE)
+      .select('*')
+      .eq('user_id', userId)
+      .eq('pattern', pattern)
+      .eq('match_type', matchType)
+      .is('account_id', null)
+      .maybeSingle();
+    if (error) throw error;
+    return data ? CategoryRuleMapper.toDomain(data as CategoryRuleRow) : null;
+  }
+
   async create(rule: CategoryRule): Promise<CategoryRule> {
     const { data, error } = await this.db
       .from(TABLE)

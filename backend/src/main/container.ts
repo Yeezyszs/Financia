@@ -12,6 +12,7 @@ import { Sha256Hasher } from '../infrastructure/services/Sha256Hasher.js';
 import { CreateAccountUseCase } from '../application/use-cases/accounts/CreateAccountUseCase.js';
 import { ListAccountsUseCase } from '../application/use-cases/accounts/ListAccountsUseCase.js';
 import { ListTransactionsUseCase } from '../application/use-cases/transactions/ListTransactionsUseCase.js';
+import { CategorizeTransactionUseCase } from '../application/use-cases/transactions/CategorizeTransactionUseCase.js';
 import { ImportStatementUseCase } from '../application/use-cases/imports/ImportStatementUseCase.js';
 import { ListImportsUseCase } from '../application/use-cases/imports/ListImportsUseCase.js';
 import { GetOverviewUseCase } from '../application/use-cases/reports/GetOverviewUseCase.js';
@@ -52,6 +53,12 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
   const createAccount = new CreateAccountUseCase(accountRepository, ids);
   const listAccounts = new ListAccountsUseCase(accountRepository);
   const listTransactions = new ListTransactionsUseCase(transactionRepository);
+  const categorizeTransaction = new CategorizeTransactionUseCase(
+    transactionRepository,
+    categoryRepository,
+    categoryRuleRepository,
+    ids,
+  );
   const importStatement = new ImportStatementUseCase(
     accountRepository,
     importRepository,
@@ -69,7 +76,7 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
 
   return {
     accounts: new AccountController(createAccount, listAccounts),
-    transactions: new TransactionController(listTransactions),
+    transactions: new TransactionController(listTransactions, categorizeTransaction),
     imports: new ImportController(importStatement, listImports),
     reports: new ReportController(getOverview, listCategories, getSnapshot),
   };

@@ -76,9 +76,7 @@ export function ExportSummary({ month, months }: { month: string; months: number
         </div>
       ) : null}
 
-      {estado === 'falhou' && !texto ? (
-        <div className="notice error">{erro}</div>
-      ) : null}
+      {estado === 'falhou' && !texto ? <div className="notice error">{erro}</div> : null}
     </div>
   );
 }

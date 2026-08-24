@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api } from '../api/client.js';
 import type { Account, Category, Transaction } from '../api/types.js';
 import { date, money } from '../format.js';
 import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
+import { CategoryPicker } from '../components/CategoryPicker.js';
 
 const PAGE_SIZE = 50;
 
@@ -27,6 +28,9 @@ export function Transactions({
   const [includeTransfers, setIncludeTransfers] = useState(false);
   const isMobile = useMediaQuery(MOBILE);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [lembrar, setLembrar] = useState(true);
+  const [aviso, setAviso] = useState<string | null>(null);
+  const [versao, setVersao] = useState(0);
 
   // Busca com debounce para não disparar uma request por tecla digitada.
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -72,15 +76,51 @@ export function Transactions({
     return () => {
       active = false;
     };
-  }, [accountId, categoryId, from, to, debouncedSearch, includeTransfers, offset]);
+  }, [accountId, categoryId, from, to, debouncedSearch, includeTransfers, offset, versao]);
+
+  /**
+   * Atualiza a linha localmente em vez de recarregar a lista inteira:
+   * recarregar faria a página saltar e perderia a posição de rolagem no
+   * meio de uma sequência de correções.
+   */
+  const categorizar = useCallback(
+    async (transactionId: string, categoryId: string | null) => {
+      setAviso(null);
+
+      try {
+        const resultado = await api.categorizeTransaction(transactionId, {
+          categoryId,
+          remember: lembrar,
+        });
+
+        setItems((atuais) =>
+          atuais.map((item) => (item.id === transactionId ? resultado.transaction : item)),
+        );
+
+        if (resultado.alsoUpdated > 0) {
+          // As outras mudaram no servidor, não aqui: recarregar é o que
+          // faz a lista refletir a realidade sem pedir isso ao usuário.
+          setVersao((atual) => atual + 1);
+          setAviso(
+            `Categoria salva. ${resultado.alsoUpdated} ${
+              resultado.alsoUpdated === 1
+                ? 'transação parecida também foi atualizada'
+                : 'transações parecidas também foram atualizadas'
+            }.`,
+          );
+        } else if (resultado.learnedPattern) {
+          setAviso(`Categoria salva e memorizada para "${resultado.learnedPattern}".`);
+        }
+      } catch (err) {
+        setAviso(err instanceof Error ? err.message : 'Não consegui salvar a categoria.');
+      }
+    },
+    [lembrar],
+  );
 
   const accountName = useMemo(
     () => new Map(accounts.map((account) => [account.id, account.name])),
     [accounts],
-  );
-  const categoryName = useMemo(
-    () => new Map(categories.map((category) => [category.id, category.name])),
-    [categories],
   );
 
   const lastPage = offset + PAGE_SIZE >= total;
@@ -168,6 +208,17 @@ export function Transactions({
 
       {error ? <div className="notice error">{error}</div> : null}
 
+      <label className="check-line">
+        <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} />
+        <span>Lembrar minha escolha para o mesmo estabelecimento</span>
+      </label>
+
+      {aviso ? (
+        <div className="notice" role="status">
+          {aviso}
+        </div>
+      ) : null}
+
       {isMobile ? (
         <div className="card-list">
           {loading ? (
@@ -197,14 +248,12 @@ export function Transactions({
                   <span>{date(transaction.occurredOn)}</span>
                   <span aria-hidden="true">·</span>
                   <span>{accountName.get(transaction.accountId) ?? '—'}</span>
-                  {transaction.categoryId ? (
-                    <>
-                      <span aria-hidden="true">·</span>
-                      <span>{categoryName.get(transaction.categoryId) ?? '—'}</span>
-                    </>
-                  ) : (
-                    <span className="tag">sem categoria</span>
-                  )}
+                  <span aria-hidden="true">·</span>
+                  <CategoryPicker
+                    value={transaction.categoryId}
+                    categories={categories}
+                    onChange={(categoryId) => categorizar(transaction.id, categoryId)}
+                  />
                   {transaction.isTransfer ? <span className="tag">transferência</span> : null}
                 </div>
               </article>
@@ -257,11 +306,11 @@ export function Transactions({
                     </td>
                     <td>{accountName.get(transaction.accountId) ?? '—'}</td>
                     <td>
-                      {transaction.categoryId ? (
-                        (categoryName.get(transaction.categoryId) ?? '—')
-                      ) : (
-                        <span className="tag">sem categoria</span>
-                      )}
+                      <CategoryPicker
+                        value={transaction.categoryId}
+                        categories={categories}
+                        onChange={(categoryId) => categorizar(transaction.id, categoryId)}
+                      />
                     </td>
                     <td className="num">
                       <span className={transaction.amountCents > 0 ? 'amount-in' : 'amount-out'}>

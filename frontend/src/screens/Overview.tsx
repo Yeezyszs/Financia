@@ -232,8 +232,8 @@ export function Overview(): ReactNode {
       <div className="card" style={{ marginTop: 14 }}>
         <h2 className="card-title">Analisar com o Claude</h2>
         <p className="page-subtitle" style={{ marginBottom: 14 }}>
-          Gera um resumo dos últimos {janela} meses — totais, assinaturas, recorrentes e
-          variações — já com o contexto necessário para uma conversa sobre onde economizar.
+          Gera um resumo dos últimos {janela} meses — totais, assinaturas, recorrentes e variações —
+          já com o contexto necessário para uma conversa sobre onde economizar.
         </p>
         <ExportSummary month={`${year}-${String(month).padStart(2, '0')}`} months={janela} />
       </div>

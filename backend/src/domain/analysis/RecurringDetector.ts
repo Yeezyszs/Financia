@@ -66,7 +66,10 @@ export function merchantKey(description: string): string {
 
   for (const prefixo of RUIDO) {
     if (texto.startsWith(prefixo)) {
-      texto = texto.slice(prefixo.length).replace(/^[\s-]+/, '').trim();
+      texto = texto
+        .slice(prefixo.length)
+        .replace(/^[\s-]+/, '')
+        .trim();
       break;
     }
   }
@@ -159,8 +162,7 @@ export function detectRecurring(
     // e contá-las como gasto fixo inflaria o número que se usa para
     // planejar o mês. Assinatura cobra uma vez por ciclo.
     const porMes = lista.length / meses.size;
-    const kind: RecurrenceKind =
-      valorEstavel && porMes <= maxPorMes ? 'subscription' : 'recurring';
+    const kind: RecurrenceKind = valorEstavel && porMes <= maxPorMes ? 'subscription' : 'recurring';
 
     const ordenadas = [...lista].sort((a, b) => a.occurredOn.localeCompare(b.occurredOn));
     const maisRecente = ordenadas[ordenadas.length - 1]!;

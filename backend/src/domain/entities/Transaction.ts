@@ -148,6 +148,27 @@ export class Transaction {
     });
   }
 
+  /** Remove a categoria — volta a contar como não categorizada. */
+  uncategorize(): Transaction {
+    return new Transaction({
+      ...this.props,
+      categoryId: null,
+      categorizedBy: 'uncategorized',
+      appliedRuleId: null,
+    });
+  }
+
+  /**
+   * Desfaz a marcação de transferência.
+   *
+   * Recategorizar de "Transferências" para "Mercado" precisa desmarcar,
+   * senão a transação sai da categoria mas continua fora dos totais — e
+   * o gasto some da Visão Geral sem explicação.
+   */
+  asRegularEntry(): Transaction {
+    return new Transaction({ ...this.props, isTransfer: false, counterpartTransactionId: null });
+  }
+
   /** Marca as duas pontas do pagamento de fatura como transferência. */
   markAsTransfer(counterpartId: string | null = null): Transaction {
     return new Transaction({

@@ -1,4 +1,7 @@
-import { detectRecurring, type RecurringGroup } from '../../../domain/analysis/RecurringDetector.js';
+import {
+  detectRecurring,
+  type RecurringGroup,
+} from '../../../domain/analysis/RecurringDetector.js';
 import type { CategoryRepository } from '../../ports/repositories/CategoryRepository.js';
 import type { TransactionRepository } from '../../ports/repositories/TransactionRepository.js';
 

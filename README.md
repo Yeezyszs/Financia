@@ -105,6 +105,7 @@ Toda rota (menos `/api/health`) exige o header `Authorization: Bearer <jwt>` da 
 | `GET /api/health` | ping, sem token — é o que o monitoramento consulta |
 | `GET /api/accounts` · `POST /api/accounts` | contas |
 | `GET /api/transactions` | listagem com filtros de conta, categoria, período e busca |
+| `PATCH /api/transactions/:id/category` | define a categoria e, opcionalmente, memoriza a escolha |
 | `POST /api/imports` | importa um CSV |
 | `GET /api/imports` | histórico de importações |
 
@@ -231,9 +232,30 @@ o que já foi excluído deles), para o contexto não precisar ser reescrito toda
 Se um dia fizer sentido integrar — análise automática mensal, ou multiusuário — o
 payload já existe: é o mesmo snapshot.
 
+## Categorização manual
+
+A categoria de qualquer transação pode ser trocada direto na listagem. Com "lembrar"
+ligado (o padrão), a escolha vira uma regra `learned` para o mesmo estabelecimento e é
+aplicada de imediato às transações passadas que casam — é o que evita repetir a mesma
+correção trinta vezes.
+
+Três decisões que evitam estrago:
+
+**Escolha manual anterior nunca é sobrescrita.** A aplicação retroativa só toca no que
+foi categorizado automaticamente. Uma decisão sua é informação, não ruído.
+
+**A regra aprendida vence as do sistema, mas não as de transferência.** Prioridade 5:
+à frente do palpite genérico do seed (10–20), atrás das regras de pagamento de fatura
+(1). Sem isso, um aprendizado poderia fazer a fatura voltar a contar como despesa.
+
+**Sair de "Transferências" devolve a transação aos totais.** Trocar a categoria sem
+desmarcar `is_transfer` faria o gasto sumir da Visão Geral sem explicação.
+
+Chave de estabelecimento curta demais (menos de 3 caracteres) não vira regra: ela
+casaria com meio extrato.
+
 ## O que vem depois do MVP
 
-- **Editar a categoria de uma transação pela UI** + "lembrar essa categoria" (cria uma regra `learned`) — hoje a categorização é só automática, corrigir exige mexer no banco
 - **Reconciliação explícita fatura x conta** — linkar as duas pontas do pagamento (`counterpart_transaction_id`); hoje as duas já ficam fora dos totais, falta o link
 - **Metas e Parcelas** — tabelas prontas, sem UI
 - **Adapter do C6** — a porta existe, falta um export real

@@ -851,3 +851,55 @@ button.ghost {
   color: var(--text-primary);
   resize: vertical;
 }
+
+/* Seletor de categoria dentro da listagem: precisa parecer texto até
+   receber atenção, senão a tabela vira um formulário. */
+.category-picker {
+  min-width: 0;
+  width: 100%;
+  max-width: 190px;
+  padding: 4px 6px;
+  font-size: 13px;
+  border-color: transparent;
+  background: transparent;
+}
+
+.category-picker:hover,
+.category-picker:focus-visible {
+  border-color: var(--border-strong);
+  background: var(--surface-1);
+}
+
+.category-picker.sem-categoria {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.tx-card-meta .category-picker {
+  max-width: 160px;
+  font-size: 12.5px;
+}
+
+@media (max-width: 720px) {
+  .category-picker {
+    min-height: 32px;
+    font-size: 14px;
+  }
+}
+
+/* Checkbox e rótulo longo: sem alinhar pelo topo, o texto que quebra em
+   duas linhas empurra o quadradinho para fora da linha dele. */
+.check-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 13.5px;
+  line-height: 1.4;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.check-line input[type='checkbox'] {
+  flex: none;
+  margin-top: 1px;
+}
