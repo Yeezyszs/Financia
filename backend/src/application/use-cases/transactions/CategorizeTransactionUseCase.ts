@@ -31,8 +31,14 @@ export interface CategorizeTransactionOutput {
   transaction: Transaction;
   /** Regra criada ou atualizada, quando `remember`. */
   learnedPattern: string | null;
-  /** Quantas outras transações do mesmo estabelecimento foram atualizadas. */
-  alsoUpdated: number;
+  /**
+   * Quais outras transações do mesmo estabelecimento foram atualizadas.
+   *
+   * A lista, e não só a contagem, porque é ela que deixa a tela aplicar a
+   * mudança no lugar de recarregar tudo — recarregar faz a página saltar
+   * para o topo no meio de uma sequência de correções.
+   */
+  alsoUpdatedIds: string[];
 }
 
 export class CategorizeTransactionUseCase {
@@ -65,18 +71,18 @@ export class CategorizeTransactionUseCase {
     );
 
     if (!input.remember || !category) {
-      return { transaction: salva, learnedPattern: null, alsoUpdated: 0 };
+      return { transaction: salva, learnedPattern: null, alsoUpdatedIds: [] };
     }
 
     const pattern = merchantKey(transaction.description);
     if (pattern.length < TAMANHO_MINIMO_DA_CHAVE) {
-      return { transaction: salva, learnedPattern: null, alsoUpdated: 0 };
+      return { transaction: salva, learnedPattern: null, alsoUpdatedIds: [] };
     }
 
     await this.saveRule(input.userId, pattern, category.id);
-    const alsoUpdated = await this.applyToSimilar(input.userId, pattern, category, salva.id);
+    const alsoUpdatedIds = await this.applyToSimilar(input.userId, pattern, category, salva.id);
 
-    return { transaction: salva, learnedPattern: pattern, alsoUpdated };
+    return { transaction: salva, learnedPattern: pattern, alsoUpdatedIds };
   }
 
   /** Uma regra por padrão: corrigir de novo reaponta a mesma regra. */
@@ -118,7 +124,7 @@ export class CategorizeTransactionUseCase {
     pattern: string,
     category: { id: string; kind: string },
     exceptId: string,
-  ): Promise<number> {
+  ): Promise<string[]> {
     const candidatas = await this.transactions.listRecategorizable(userId);
     const isTransfer = category.kind === 'transfer';
 
@@ -129,15 +135,11 @@ export class CategorizeTransactionUseCase {
         merchantKey(candidata.description) === pattern,
     );
 
-    if (alvos.length === 0) return 0;
+    if (alvos.length === 0) return [];
 
-    await this.transactions.setCategoryForMany(
-      userId,
-      alvos.map((alvo) => alvo.id),
-      category.id,
-      isTransfer,
-    );
+    const ids = alvos.map((alvo) => alvo.id);
+    await this.transactions.setCategoryForMany(userId, ids, category.id, isTransfer);
 
-    return alvos.length;
+    return ids;
   }
 }

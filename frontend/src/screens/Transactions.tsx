@@ -30,7 +30,6 @@ export function Transactions({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [lembrar, setLembrar] = useState(true);
   const [aviso, setAviso] = useState<string | null>(null);
-  const [versao, setVersao] = useState(0);
 
   // Busca com debounce para não disparar uma request por tecla digitada.
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -76,16 +75,34 @@ export function Transactions({
     return () => {
       active = false;
     };
-  }, [accountId, categoryId, from, to, debouncedSearch, includeTransfers, offset, versao]);
+  }, [accountId, categoryId, from, to, debouncedSearch, includeTransfers, offset]);
 
   /**
    * Atualiza a linha localmente em vez de recarregar a lista inteira:
    * recarregar faria a página saltar e perderia a posição de rolagem no
    * meio de uma sequência de correções.
    */
+  // O aviso se apaga sozinho — deixá-lo fixo faria o recado da correção
+  // anterior conviver com a próxima.
+  useEffect(() => {
+    if (!aviso) return;
+    const timer = setTimeout(() => setAviso(null), 4500);
+    return () => clearTimeout(timer);
+  }, [aviso]);
+
   const categorizar = useCallback(
     async (transactionId: string, categoryId: string | null) => {
       setAviso(null);
+
+      // Aplica antes de perguntar ao servidor. A troca de categoria quase
+      // sempre dá certo, e esperar a ida e volta para pintar a tela faz
+      // cada correção parecer travada.
+      const anterior = items;
+      setItems((atuais) =>
+        atuais.map((item) =>
+          item.id === transactionId ? { ...item, categoryId, categorizedBy: 'manual' } : item,
+        ),
+      );
 
       try {
         const resultado = await api.categorizeTransaction(transactionId, {
@@ -93,17 +110,25 @@ export function Transactions({
           remember: lembrar,
         });
 
+        // As outras mudaram no servidor: aplicamos as mesmas linhas aqui em
+        // vez de recarregar a lista. Recarregar esvaziaria a tabela por um
+        // instante, e a página saltaria para o topo no meio da correção.
+        const tambem = new Set(resultado.alsoUpdatedIds);
         setItems((atuais) =>
-          atuais.map((item) => (item.id === transactionId ? resultado.transaction : item)),
+          atuais.map((item) =>
+            item.id === transactionId
+              ? resultado.transaction
+              : tambem.has(item.id)
+                ? { ...item, categoryId, categorizedBy: 'rule' as const }
+                : item,
+          ),
         );
 
-        if (resultado.alsoUpdated > 0) {
-          // As outras mudaram no servidor, não aqui: recarregar é o que
-          // faz a lista refletir a realidade sem pedir isso ao usuário.
-          setVersao((atual) => atual + 1);
+        const total = resultado.alsoUpdatedIds.length;
+        if (total > 0) {
           setAviso(
-            `Categoria salva. ${resultado.alsoUpdated} ${
-              resultado.alsoUpdated === 1
+            `Categoria salva. ${total} ${
+              total === 1
                 ? 'transação parecida também foi atualizada'
                 : 'transações parecidas também foram atualizadas'
             }.`,
@@ -112,10 +137,13 @@ export function Transactions({
           setAviso(`Categoria salva e memorizada para "${resultado.learnedPattern}".`);
         }
       } catch (err) {
+        // Desfaz o palpite otimista: mostrar uma categoria que não foi
+        // salva é pior que não mostrar nada.
+        setItems(anterior);
         setAviso(err instanceof Error ? err.message : 'Não consegui salvar a categoria.');
       }
     },
-    [lembrar],
+    [items, lembrar],
   );
 
   const accountName = useMemo(
@@ -214,14 +242,14 @@ export function Transactions({
       </label>
 
       {aviso ? (
-        <div className="notice" role="status">
+        <div className="toast" role="status">
           {aviso}
         </div>
       ) : null}
 
       {isMobile ? (
         <div className="card-list">
-          {loading ? (
+          {loading && items.length === 0 ? (
             <div className="card stack">
               {[0, 1, 2, 3, 4].map((i) => (
                 <span key={i} className="skeleton" />

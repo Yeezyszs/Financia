@@ -54,7 +54,7 @@ export class TransactionController {
         data: {
           transaction: TransactionPresenter.toHttp(result.transaction),
           learnedPattern: result.learnedPattern,
-          alsoUpdated: result.alsoUpdated,
+          alsoUpdatedIds: result.alsoUpdatedIds,
         },
       });
     } catch (error) {

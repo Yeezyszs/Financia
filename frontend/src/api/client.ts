@@ -112,10 +112,11 @@ export const api = {
     request<Account>('/accounts', { method: 'POST', body: JSON.stringify(body) }),
 
   categorizeTransaction: (id: string, body: { categoryId: string | null; remember?: boolean }) =>
-    request<{ transaction: Transaction; learnedPattern: string | null; alsoUpdated: number }>(
-      `/transactions/${id}/category`,
-      { method: 'PATCH', body: JSON.stringify(body) },
-    ),
+    request<{
+      transaction: Transaction;
+      learnedPattern: string | null;
+      alsoUpdatedIds: string[];
+    }>(`/transactions/${id}/category`, { method: 'PATCH', body: JSON.stringify(body) }),
 
   snapshot: (query: { month?: string; months?: number } = {}) =>
     request<Snapshot>(`/reports/snapshot${toQueryString(query)}`),

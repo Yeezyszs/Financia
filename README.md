@@ -70,6 +70,8 @@ Migrations em `supabase/migrations/`, aplicadas em ordem:
 | `0009_provision_new_user.sql` | trigger que provisiona perfil e categorias de usuário novo |
 | `0010_seed_own_defaults.sql` | seed sob demanda para o próprio usuário |
 | `0011_category_monthly_series.sql` | série mensal por categoria |
+| `0012_novo_conjunto_de_categorias.sql` | conjunto enxuto, com remapeamento dos dados existentes |
+| `0013_seed_novo_conjunto.sql` | seed alinhado ao conjunto novo |
 
 O projeto **Financia** (`mmijyibobnigjtirzzja`, região us-west-2) já está com as migrations aplicadas, RLS ligada nas 9 tabelas, o usuário single-user criado e semeado (15 categorias, 25 regras) e as duas contas do MVP prontas: `Nubank Conta Corrente` e `Nubank Cartão de Crédito` (essa última já apontando para a conta corrente que quita a fatura).
 
@@ -231,6 +233,21 @@ o que já foi excluído deles), para o contexto não precisar ser reescrito toda
 
 Se um dia fizer sentido integrar — análise automática mensal, ou multiusuário — o
 payload já existe: é o mesmo snapshot.
+
+## Categorias
+
+Sete de despesa — Alimentação, Lazer, Parcelas, Abastecimento, Educação, Investimentos,
+Outros gastos — cinco de receita — Salário, Renda extra, Rendimentos, Reembolsos,
+Outras receitas — e Transferências, que é o que mantém o pagamento da fatura fora dos
+totais.
+
+A migração que enxugou o conjunto remapeia transações e regras **antes** de excluir
+qualquer categoria: o `on delete` levaria junto as categorizações já feitas e as regras
+aprendidas pelo uso.
+
+Duas consequências dessa escolha, deliberadas: moradia e transporte por app caem em
+"Outros gastos", então deixam de aparecer separados na análise de tendência. Voltar
+atrás é uma migration curta.
 
 ## Categorização manual
 

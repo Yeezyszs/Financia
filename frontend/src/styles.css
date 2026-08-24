@@ -900,6 +900,53 @@ button.ghost {
 }
 
 .check-line input[type='checkbox'] {
+  /* A regra global de campos impõe min-width de 150px, o que empurrava o
+     quadradinho para longe do texto. */
   flex: none;
-  margin-top: 1px;
+  width: 16px;
+  height: 16px;
+  min-width: 0;
+  margin: 1px 0 0;
+}
+
+/* Aviso flutuante.
+   Em fluxo normal ele empurraria a lista para baixo, e no meio de uma
+   sequência de correções isso é sentido como a página se mexendo
+   sozinha. Fora do fluxo, nada desloca. */
+.toast {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 24px;
+  z-index: 30;
+  max-width: min(520px, calc(100vw - 28px));
+  padding: 11px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  box-shadow: var(--shadow);
+  font-size: 13.5px;
+  line-height: 1.4;
+  animation: toast-in 160ms ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+@media (max-width: 720px) {
+  /* Acima da barra de navegação, que é fixa no rodapé. */
+  .toast {
+    bottom: calc(72px + env(safe-area-inset-bottom));
+  }
 }

@@ -71,7 +71,7 @@ describe('CategorizeTransactionUseCase', () => {
     });
 
     expect(resultado.learnedPattern).toBeNull();
-    expect(resultado.alsoUpdated).toBe(0);
+    expect(resultado.alsoUpdatedIds).toEqual([]);
     expect(ctx.regras.rules).toHaveLength(0);
   });
 
@@ -85,7 +85,7 @@ describe('CategorizeTransactionUseCase', () => {
 
     expect(resultado.learnedPattern).toBe('ifood');
     // t2 e t3 são o mesmo estabelecimento com sufixos diferentes
-    expect(resultado.alsoUpdated).toBe(2);
+    expect(resultado.alsoUpdatedIds.sort()).toEqual(['t2', 't3']);
     expect(ctx.transacoes.transactions.find((t) => t.id === 't2')?.categoryId).toBe('cat-food');
     expect(ctx.transacoes.transactions.find((t) => t.id === 't4')?.categoryId).toBeNull();
   });
@@ -125,7 +125,7 @@ describe('CategorizeTransactionUseCase', () => {
       remember: true,
     });
 
-    expect(resultado.alsoUpdated).toBe(0);
+    expect(resultado.alsoUpdatedIds).toEqual([]);
     expect(ctx.transacoes.transactions.find((t) => t.id === 't2')?.categoryId).toBe('cat-market');
   });
 
