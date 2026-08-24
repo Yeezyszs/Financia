@@ -97,13 +97,41 @@ describe('detectRecurring', () => {
     expect(grupos.map((g) => g.label)).toEqual(['Aluguel', 'Netflix.com']);
   });
 
-  it('usa a descrição mais recente como rótulo', () => {
+  it('usa o nome do estabelecimento quando as descrições variam', () => {
     const grupos = detectRecurring([
       tx('2026-06-05', 'IFOOD *ANTIGO', -4000),
       tx('2026-07-05', 'IFOOD *MEIO', -4200),
       tx('2026-08-05', 'Ifood *Restaurante Novo', -3900),
     ]);
 
-    expect(grupos[0]?.label).toBe('Ifood *Restaurante Novo');
+    // qualquer uma das três seria um rótulo arbitrário para o grupo
+    expect(grupos[0]?.label).toBe('Ifood');
+  });
+
+  it('mantém a descrição literal quando ela é sempre a mesma', () => {
+    const grupos = detectRecurring([
+      tx('2026-06-05', 'Netflix.com', -5590),
+      tx('2026-07-05', 'Netflix.com', -5590),
+      tx('2026-08-05', 'Netflix.com', -5590),
+    ]);
+
+    expect(grupos[0]?.label).toBe('Netflix.com');
+  });
+
+  it('compra semanal de valor parecido não é assinatura', () => {
+    // Quatro idas ao atacadista por mês, valores próximos: sem olhar a
+    // cadência isso passaria por assinatura e inflaria o gasto fixo.
+    const compras: ReturnType<typeof tx>[] = [];
+    for (const mes of ['06', '07', '08']) {
+      for (const [i, dia] of ['03', '09', '15', '21'].entries()) {
+        compras.push(tx(`2026-${mes}-${dia}`, 'ASSAI ATACADISTA', -(30000 + i * 2000)));
+      }
+    }
+
+    const grupos = detectRecurring(compras);
+
+    expect(grupos[0]?.kind).toBe('recurring');
+    expect(grupos[0]?.occurrences).toBe(12);
+    expect(grupos[0]?.monthsSeen).toBe(3);
   });
 });

@@ -5,6 +5,7 @@ import { CategoryChart } from '../components/CategoryChart.js';
 import { MonthlyChart } from '../components/MonthlyChart.js';
 import { RecurringCard } from '../components/RecurringCard.js';
 import { TrendList } from '../components/TrendList.js';
+import { ExportSummary } from '../components/ExportSummary.js';
 import { money, monthRange } from '../format.js';
 import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 
@@ -204,6 +205,15 @@ export function Overview(): ReactNode {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 14 }}>
+        <h2 className="card-title">Analisar com o Claude</h2>
+        <p className="page-subtitle" style={{ marginBottom: 14 }}>
+          Gera um resumo dos últimos 6 meses — totais, assinaturas, recorrentes e variações —
+          já com o contexto necessário para uma conversa sobre onde economizar.
+        </p>
+        <ExportSummary month={`${year}-${String(month).padStart(2, '0')}`} />
       </div>
     </>
   );

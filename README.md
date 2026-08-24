@@ -67,6 +67,9 @@ Migrations em `supabase/migrations/`, aplicadas em ordem:
 | `0006_increment_rule_hits.sql` | contador de uso das regras de categorização |
 | `0007_totals_split_sign.sql` | entrada e saída separadas por categoria |
 | `0008_grants_for_authenticated.sql` | funções executáveis pelo usuário logado |
+| `0009_provision_new_user.sql` | trigger que provisiona perfil e categorias de usuário novo |
+| `0010_seed_own_defaults.sql` | seed sob demanda para o próprio usuário |
+| `0011_category_monthly_series.sql` | série mensal por categoria |
 
 O projeto **Financia** (`mmijyibobnigjtirzzja`, região us-west-2) já está com as migrations aplicadas, RLS ligada nas 9 tabelas, o usuário single-user criado e semeado (15 categorias, 25 regras) e as duas contas do MVP prontas: `Nubank Conta Corrente` e `Nubank Cartão de Crédito` (essa última já apontando para a conta corrente que quita a fatura).
 
@@ -200,6 +203,33 @@ Três telas, sem dependência de UI além do React — os gráficos são SVG esc
 - **Histórico** — upload do CSV por drag-and-drop, resultado da importação e o log de tudo que já entrou, inclusive o que falhou
 
 **Cores dos gráficos.** Azul para receitas, laranja para despesas, nos dois modos (claro e escuro). O par foi validado para daltonismo: ΔE ≥ 24 sob protanopia e deuteranopia e ≥ 3:1 de contraste contra a superfície — separação bem acima do piso, então a leitura não depende de distinguir as duas cores. As barras de categoria usam uma cor só: ali quem carrega a identidade é o rótulo, e oito hues indistinguíveis não informariam nada a mais.
+
+## Análise e exportação
+
+O backend calcula um retrato dos últimos meses — `GET /api/reports/snapshot` — e o
+formata como texto em `GET /api/reports/summary.md`. Nenhuma IA participa disso: tudo
+é cálculo determinístico, testado. Se um número sair errado, o erro está em código.
+
+**Detecção de recorrência.** O agrupamento é por estabelecimento, não por descrição
+literal: "Ifood \*Sabor" e "Ifood \*Outro" são o mesmo lugar, e "Compra no débito -
+ASSAI" é o mesmo que "ASSAI". Duas limpezas puxam para lados opostos — o prefixo do
+banco vem antes do traço, o detalhe da compra vem depois do asterisco — então a ordem
+delas importa e está fixada no código.
+
+Um grupo vira **assinatura** quando tem valor estável *e* cadência de ~1 vez por mês.
+Só o valor não basta: quatro compras mensais num atacadista têm valores parecidos e
+não são assinatura — contá-las como gasto fixo inflaria o número usado para planejar
+o mês. O resto é **recorrente variável**: dá para reduzir, não para zerar.
+
+**Por que exportar em vez de integrar a API.** A alternativa era chamar a API da
+Anthropic de dentro do app. Custaria crédito por análise, exigiria uma chave secreta
+em produção e devolveria um texto único — sem chance de perguntar "por quê". Colar o
+resumo numa conversa preserva a ida e volta, que é onde conselho financeiro fica bom,
+e não custa nada. O resumo já sai com o próprio enquadramento (o que são os números,
+o que já foi excluído deles), para o contexto não precisar ser reescrito toda vez.
+
+Se um dia fizer sentido integrar — análise automática mensal, ou multiusuário — o
+payload já existe: é o mesmo snapshot.
 
 ## O que vem depois do MVP
 

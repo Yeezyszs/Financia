@@ -27,6 +27,8 @@ export interface FinancialSnapshot {
   /** Soma mensal das assinaturas — o gasto que existe mesmo parado. */
   fixedMonthlyCents: number;
   variableMonthlyCents: number;
+  /** Receita e despesa por mês da janela, do mais antigo ao mais recente. */
+  monthlySeries: { month: string; incomeCents: number; expenseCents: number }[];
   subscriptions: RecurringItem[];
   recurring: RecurringItem[];
   trends: CategoryTrend[];
@@ -85,6 +87,18 @@ export class GetFinancialSnapshotUseCase {
     const totalIncome = series.reduce((soma, ponto) => soma + ponto.incomeCents, 0);
     const totalExpense = series.reduce((soma, ponto) => soma + ponto.expenseCents, 0);
     const mesesComDados = new Set(series.map((ponto) => ponto.month)).size || 1;
+
+    // ---- série mensal consolidada (a de categoria já traz os dois lados)
+    const porMes = new Map<string, { incomeCents: number; expenseCents: number }>();
+    for (const ponto of series) {
+      const atual = porMes.get(ponto.month) ?? { incomeCents: 0, expenseCents: 0 };
+      atual.incomeCents += ponto.incomeCents;
+      atual.expenseCents += ponto.expenseCents;
+      porMes.set(ponto.month, atual);
+    }
+    const monthlySeries = [...porMes.entries()]
+      .map(([month, valores]) => ({ month, ...valores }))
+      .sort((a, b) => a.month.localeCompare(b.month));
 
     // ---- recorrência
     const grupos = detectRecurring(rawTransactions);
@@ -163,6 +177,7 @@ export class GetFinancialSnapshotUseCase {
       expense: { totalCents: totalExpense, monthlyAverageCents: expenseMonthlyAverage },
       fixedMonthlyCents,
       variableMonthlyCents: Math.max(expenseMonthlyAverage - fixedMonthlyCents, 0),
+      monthlySeries,
       subscriptions,
       recurring,
       trends,

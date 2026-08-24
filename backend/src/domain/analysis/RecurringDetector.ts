@@ -84,6 +84,14 @@ export function merchantKey(description: string): string {
   return texto.replace(/[\s-]+$/, '').trim();
 }
 
+/** "assai atacadista" -> "Assai Atacadista" */
+function titulo(chave: string): string {
+  return chave
+    .split(' ')
+    .map((palavra) => palavra.charAt(0).toUpperCase() + palavra.slice(1))
+    .join(' ');
+}
+
 function mediana(valores: number[]): number {
   const ordenados = [...valores].sort((a, b) => a - b);
   const meio = Math.floor(ordenados.length / 2);
@@ -97,6 +105,8 @@ export interface DetectOptions {
   minMonths?: number;
   /** Quanto o valor pode variar para ainda ser "assinatura". */
   toleranciaValor?: number;
+  /** Ocorrências por mês aceitas para ainda ser "assinatura". */
+  maxPorMes?: number;
 }
 
 /**
@@ -113,6 +123,7 @@ export function detectRecurring(
 ): RecurringGroup[] {
   const minMonths = options.minMonths ?? 3;
   const tolerancia = options.toleranciaValor ?? 0.2;
+  const maxPorMes = options.maxPorMes ?? 1.3;
 
   const grupos = new Map<string, AnalyzableTransaction[]>();
 
@@ -141,17 +152,29 @@ export function detectRecurring(
     const dentroDaFaixa = valores.filter(
       (valor) => Math.abs(valor - tipico) <= tipico * tolerancia,
     ).length;
+    const valorEstavel = dentroDaFaixa / valores.length >= 0.7;
 
-    // Valor estável na maioria das ocorrências = assinatura.
-    const kind: RecurrenceKind = dentroDaFaixa / valores.length >= 0.7 ? 'subscription' : 'recurring';
+    // Cadência importa tanto quanto o valor. Quatro compras por mês num
+    // atacadista podem ter valores parecidos, mas não são assinatura —
+    // e contá-las como gasto fixo inflaria o número que se usa para
+    // planejar o mês. Assinatura cobra uma vez por ciclo.
+    const porMes = lista.length / meses.size;
+    const kind: RecurrenceKind =
+      valorEstavel && porMes <= maxPorMes ? 'subscription' : 'recurring';
 
     const ordenadas = [...lista].sort((a, b) => a.occurredOn.localeCompare(b.occurredOn));
     const maisRecente = ordenadas[ordenadas.length - 1]!;
     const total = valores.reduce((soma, valor) => soma + valor, 0);
 
+    // Quando as descrições variam ("Ifood *Restaurante A", "*B"), a mais
+    // recente é um rótulo arbitrário: qualquer uma delas serviria e
+    // nenhuma representa o grupo. Aí o nome do estabelecimento é melhor.
+    const descricoes = new Set(lista.map((t) => t.description));
+    const label = descricoes.size === 1 ? maisRecente.description : titulo(chave);
+
     resultado.push({
       key: chave,
-      label: maisRecente.description,
+      label,
       kind,
       occurrences: lista.length,
       monthsSeen: meses.size,

@@ -114,6 +114,22 @@ export const api = {
   snapshot: (query: { month?: string; months?: number } = {}) =>
     request<Snapshot>(`/reports/snapshot${toQueryString(query)}`),
 
+  /**
+   * Resumo em markdown. Não passa pelo `request` porque a resposta é
+   * texto, não o envelope JSON das demais rotas.
+   */
+  summaryMarkdown: async (query: { month?: string; months?: number } = {}): Promise<string> => {
+    const response = await fetch(`/api/reports/summary.md${toQueryString(query)}`, {
+      headers: await authHeaders(),
+    });
+
+    if (!response.ok) {
+      throw new ApiError(`Não consegui gerar o resumo (${response.status})`, response.status);
+    }
+
+    return response.text();
+  },
+
   imports: () => request<ImportRecord[]>('/imports'),
 
   createImport: (body: { accountId: string; filename: string; content: string; force?: boolean }) =>
