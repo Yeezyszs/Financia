@@ -30,6 +30,8 @@ export function Overview(): ReactNode {
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [data, setData] = useState<OverviewData | null>(null);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
+  const [janela, setJanela] = useState(6);
+  const [erroSnapshot, setErroSnapshot] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const isMobile = useMediaQuery(MOBILE);
@@ -63,20 +65,26 @@ export function Overview(): ReactNode {
     let active = true;
     const referencia = `${year}-${String(month).padStart(2, '0')}`;
 
+    setErroSnapshot(null);
+
     api
-      .snapshot({ month: referencia, months: 6 })
+      .snapshot({ month: referencia, months: janela })
       .then((result) => {
         if (active) setSnapshot(result);
       })
-      .catch(() => {
-        // A análise é complementar: se falhar, a Visão Geral continua de pé.
-        if (active) setSnapshot(null);
+      .catch((err: Error) => {
+        // A análise é complementar — a Visão Geral continua de pé sem
+        // ela. Mas falhar em silêncio deixava esqueleto de carregamento
+        // para sempre, sem dizer que havia um erro.
+        if (!active) return;
+        setSnapshot(null);
+        setErroSnapshot(err.message);
       });
 
     return () => {
       active = false;
     };
-  }, [year, month]);
+  }, [year, month, janela]);
 
   const balancePositive = (data?.balanceCents ?? 0) >= 0;
 
@@ -99,6 +107,16 @@ export function Overview(): ReactNode {
             ))}
           </select>
         </div>
+        <div className="field">
+          <label htmlFor="janela">Análise</label>
+          <select id="janela" value={janela} onChange={(e) => setJanela(Number(e.target.value))}>
+            <option value={3}>Últimos 3 meses</option>
+            <option value={6}>Últimos 6 meses</option>
+            <option value={12}>Últimos 12 meses</option>
+            <option value={24}>Últimos 24 meses</option>
+          </select>
+        </div>
+
         <div className="field">
           <label htmlFor="ano">Ano</label>
           <select id="ano" value={year} onChange={(e) => setYear(Number(e.target.value))}>
@@ -181,8 +199,10 @@ export function Overview(): ReactNode {
 
       <div className="chart-grid" style={{ marginTop: 14 }}>
         <div className="card">
-          <h2 className="card-title">Gastos recorrentes · últimos 6 meses</h2>
-          {snapshot ? (
+          <h2 className="card-title">Gastos recorrentes · últimos {janela} meses</h2>
+          {erroSnapshot ? (
+            <div className="notice error">{erroSnapshot}</div>
+          ) : snapshot ? (
             <RecurringCard snapshot={snapshot} />
           ) : (
             <div className="stack">
@@ -195,7 +215,9 @@ export function Overview(): ReactNode {
 
         <div className="card">
           <h2 className="card-title">O que mudou neste mês</h2>
-          {snapshot ? (
+          {erroSnapshot ? (
+            <div className="notice error">{erroSnapshot}</div>
+          ) : snapshot ? (
             <TrendList trends={snapshot.trends} />
           ) : (
             <div className="stack">
@@ -210,10 +232,10 @@ export function Overview(): ReactNode {
       <div className="card" style={{ marginTop: 14 }}>
         <h2 className="card-title">Analisar com o Claude</h2>
         <p className="page-subtitle" style={{ marginBottom: 14 }}>
-          Gera um resumo dos últimos 6 meses — totais, assinaturas, recorrentes e variações —
-          já com o contexto necessário para uma conversa sobre onde economizar.
+          Gera um resumo dos últimos {janela} meses — totais, assinaturas, recorrentes e
+          variações — já com o contexto necessário para uma conversa sobre onde economizar.
         </p>
-        <ExportSummary month={`${year}-${String(month).padStart(2, '0')}`} />
+        <ExportSummary month={`${year}-${String(month).padStart(2, '0')}`} months={janela} />
       </div>
     </>
   );

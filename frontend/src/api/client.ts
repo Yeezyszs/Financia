@@ -119,12 +119,18 @@ export const api = {
    * texto, não o envelope JSON das demais rotas.
    */
   summaryMarkdown: async (query: { month?: string; months?: number } = {}): Promise<string> => {
-    const response = await fetch(`/api/reports/summary.md${toQueryString(query)}`, {
+    const response = await fetch(`/api/reports/summary${toQueryString(query)}`, {
       headers: await authHeaders(),
     });
 
     if (!response.ok) {
-      throw new ApiError(`Não consegui gerar o resumo (${response.status})`, response.status);
+      // O status vai na mensagem: "tente de novo" não distingue rota
+      // ausente de sessão expirada, e manda o usuário repetir algo que
+      // nunca vai funcionar.
+      throw new ApiError(
+        `A API respondeu ${response.status} ao gerar o resumo.`,
+        response.status,
+      );
     }
 
     return response.text();

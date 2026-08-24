@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../../src/main/app.js';
+import { buildRoutes } from '../../src/interface-adapters/routes/index.js';
 import type { Env } from '../../src/infrastructure/config/env.js';
 
 const env: Env = {
@@ -16,6 +17,10 @@ const app = createApp(env);
 function fakeJwt(payload: Record<string, unknown>): string {
   const encode = (value: object) => Buffer.from(JSON.stringify(value)).toString('base64url');
   return `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode(payload)}.assinatura-falsa`;
+}
+
+interface RouterLayer {
+  route?: { path: string; methods: Record<string, boolean> };
 }
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
@@ -52,6 +57,47 @@ describe('borda HTTP', () => {
       .set('Authorization', `Bearer ${fakeJwt({ role: 'authenticated' })}`);
     expect(response.status).toBe(401);
     expect(response.body.error.code).toBe('INVALID_TOKEN');
+  });
+
+  /**
+   * A lição que gerou este teste: duas rotas ficaram sem registrar e
+   * ninguém notou, porque o teste de ponta a ponta usava um servidor de
+   * mentira que respondia por elas.
+   *
+   * A verificação é sobre a tabela de rotas, não sobre requisições: bater
+   * de verdade em cada rota exigiria um banco, e o que falhou aqui não
+   * teve nada a ver com banco.
+   */
+  it('registra todas as rotas que o frontend consome', () => {
+    const registradas = new Set<string>();
+    const router = buildRoutes(() => (_req, _res, next) => next());
+
+    for (const layer of (router as unknown as { stack: RouterLayer[] }).stack) {
+      if (!layer.route) continue;
+      for (const metodo of Object.keys(layer.route.methods)) {
+        registradas.add(`${metodo.toUpperCase()} ${layer.route.path}`);
+      }
+    }
+
+    expect([...registradas].sort()).toEqual([
+      'GET /accounts',
+      'GET /categories',
+      'GET /imports',
+      'GET /reports/overview',
+      'GET /reports/snapshot',
+      'GET /reports/summary',
+      'GET /transactions',
+      'POST /accounts',
+      'POST /imports',
+    ]);
+  });
+
+  it('rota inexistente devolve 404', async () => {
+    const response = await request(app)
+      .get('/api/nao-existe')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(response.status).toBe(404);
   });
 
   it('valida o corpo da importação antes de tocar no banco', async () => {

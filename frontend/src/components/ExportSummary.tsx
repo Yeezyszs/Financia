@@ -12,15 +12,17 @@ type Estado = 'idle' | 'gerando' | 'copiado' | 'falhou';
  * "por quê". Colar numa conversa mantém a ida e volta — que é onde
  * conselho financeiro fica bom — e não custa nada.
  */
-export function ExportSummary({ month }: { month: string }): ReactNode {
+export function ExportSummary({ month, months }: { month: string; months: number }): ReactNode {
   const [estado, setEstado] = useState<Estado>('idle');
   const [texto, setTexto] = useState('');
+  const [erro, setErro] = useState('');
 
   async function exportar(): Promise<void> {
     setEstado('gerando');
+    setErro('');
 
     try {
-      const markdown = await api.summaryMarkdown({ month, months: 6 });
+      const markdown = await api.summaryMarkdown({ month, months });
       setTexto(markdown);
 
       // A área de transferência pode ser negada (permissão, navegador
@@ -29,7 +31,8 @@ export function ExportSummary({ month }: { month: string }): ReactNode {
       await navigator.clipboard.writeText(markdown);
       setEstado('copiado');
       setTimeout(() => setEstado((atual) => (atual === 'copiado' ? 'idle' : atual)), 6000);
-    } catch {
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Não consegui gerar o resumo.');
       setEstado('falhou');
     }
   }
@@ -74,7 +77,7 @@ export function ExportSummary({ month }: { month: string }): ReactNode {
       ) : null}
 
       {estado === 'falhou' && !texto ? (
-        <div className="notice error">Não consegui gerar o resumo. Tente de novo.</div>
+        <div className="notice error">{erro}</div>
       ) : null}
     </div>
   );

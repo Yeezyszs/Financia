@@ -54,6 +54,17 @@ export function buildRoutes(route: ControllerResolver): Router {
     '/reports/overview',
     route((c) => c.reports.overview),
   );
+  router.get(
+    '/reports/snapshot',
+    route((c) => c.reports.snapshot),
+  );
+  // Sem extensão no caminho de propósito: a Vercel serve arquivo estático
+  // antes de aplicar rewrite, e um caminho terminado em .md entra nessa
+  // disputa sem precisar.
+  router.get(
+    '/reports/summary',
+    route((c) => c.reports.summaryMarkdown),
+  );
 
   return router;
 }
