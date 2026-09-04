@@ -1171,3 +1171,19 @@ button.ghost.perigo {
 .tag-nota {
   cursor: help;
 }
+
+/* A descrição abre a transação. O sublinhado pontilhado é o que anuncia
+   isso: sem ele a única pista era o cursor, e quem não passa o mouse por
+   cima — no celular, ninguém — nunca descobre que a linha abre. */
+td button.link,
+.tx-card button.link {
+  text-decoration: underline dotted;
+  text-decoration-color: var(--border-strong);
+  text-underline-offset: 3px;
+}
+
+td button.link:hover,
+.tx-card button.link:hover {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+}

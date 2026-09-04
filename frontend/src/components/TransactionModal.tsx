@@ -20,6 +20,7 @@ export function TransactionModal({
   accountLabel,
   onCategorize,
   onCreateCategory,
+  focoNaCategoria,
   onUpdated,
   onClose,
 }: {
@@ -29,6 +30,8 @@ export function TransactionModal({
   onCategorize: (transactionId: string, categoryId: string | null) => Promise<void>;
   /** Cria a categoria pelo nome digitado e devolve a que passou a valer. */
   onCreateCategory: (name: string, kind: Category['kind']) => Promise<Category>;
+  /** Abre com o cursor já no campo de escrever a categoria. */
+  focoNaCategoria?: boolean;
   onUpdated: (transaction: Transaction) => void;
   onClose: () => void;
 }): ReactNode {
@@ -54,10 +57,14 @@ export function TransactionModal({
   const atual = useRef(notas);
   atual.current = notas;
 
+  const campoCategoria = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog || dialog.open) return;
     dialog.showModal();
+    if (focoNaCategoria) campoCategoria.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const direcao: 'expense' | 'income' =
@@ -179,6 +186,7 @@ export function TransactionModal({
           />
           <div className="nova-categoria">
             <input
+              ref={campoCategoria}
               type="text"
               value={nomeNovo}
               maxLength={40}

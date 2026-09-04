@@ -37,6 +37,9 @@ export function Transactions({
   // Categorias criadas aqui dentro. Esperar a lista do App recarregar
   // deixaria o seletor sem a opção que acabou de ser escolhida.
   const [novasCategorias, setNovasCategorias] = useState<Category[]>([]);
+  // Quem chegou pela opção "escrever" do menu já quer digitar: abrir a
+  // caixa e deixar o cursor em outro lugar seria um passo a mais à toa.
+  const [focoNaCategoria, setFocoNaCategoria] = useState(false);
 
   // Busca com debounce para não disparar uma request por tecla digitada.
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -195,7 +198,8 @@ export function Transactions({
     <>
       <h1 className="page-title">Transações</h1>
       <p className="page-subtitle">
-        {total} {total === 1 ? 'transação' : 'transações'} no filtro atual.
+        {total} {total === 1 ? 'transação' : 'transações'} no filtro atual. Clique na descrição para
+        escrever uma categoria ou uma observação.
       </p>
 
       {isMobile ? (
@@ -297,7 +301,13 @@ export function Transactions({
             items.map((transaction) => (
               <article className="tx-card" key={transaction.id}>
                 <div className="tx-card-top">
-                  <button className="link tx-desc" onClick={() => setEditandoId(transaction.id)}>
+                  <button
+                    className="link tx-desc"
+                    onClick={() => {
+                      setFocoNaCategoria(false);
+                      setEditandoId(transaction.id);
+                    }}
+                  >
                     {transaction.description}
                   </button>
                   <span
@@ -315,6 +325,10 @@ export function Transactions({
                     value={transaction.categoryId}
                     categories={categoriasDisponiveis}
                     onChange={(categoryId) => categorizar(transaction.id, categoryId)}
+                    onEscrever={() => {
+                      setFocoNaCategoria(true);
+                      setEditandoId(transaction.id);
+                    }}
                   />
                   {transaction.isTransfer ? <span className="tag">transferência</span> : null}
                   {transaction.notes ? (
@@ -363,7 +377,13 @@ export function Transactions({
                   <tr key={transaction.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{date(transaction.occurredOn)}</td>
                     <td>
-                      <button className="link" onClick={() => setEditandoId(transaction.id)}>
+                      <button
+                        className="link"
+                        onClick={() => {
+                          setFocoNaCategoria(false);
+                          setEditandoId(transaction.id);
+                        }}
+                      >
                         {transaction.description}
                       </button>
                       {transaction.isTransfer ? (
@@ -387,6 +407,10 @@ export function Transactions({
                         value={transaction.categoryId}
                         categories={categoriasDisponiveis}
                         onChange={(categoryId) => categorizar(transaction.id, categoryId)}
+                        onEscrever={() => {
+                          setFocoNaCategoria(true);
+                          setEditandoId(transaction.id);
+                        }}
                       />
                     </td>
                     <td className="num">
@@ -409,6 +433,7 @@ export function Transactions({
           accountLabel={accountName.get(editando.accountId) ?? '—'}
           onCategorize={categorizar}
           onCreateCategory={criarCategoria}
+          focoNaCategoria={focoNaCategoria}
           onUpdated={aplicar}
           onClose={() => setEditandoId(null)}
         />
