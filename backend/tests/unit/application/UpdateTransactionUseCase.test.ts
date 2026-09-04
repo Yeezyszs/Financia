@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { UpdateTransactionUseCase } from '../../../src/application/use-cases/transactions/UpdateTransactionUseCase.js';
 import { FlipImportSignsUseCase } from '../../../src/application/use-cases/imports/FlipImportSignsUseCase.js';
+import { DeleteImportUseCase } from '../../../src/application/use-cases/imports/DeleteImportUseCase.js';
 import { Import } from '../../../src/domain/entities/Import.js';
 import { Transaction } from '../../../src/domain/entities/Transaction.js';
 import { Money } from '../../../src/domain/value-objects/Money.js';
@@ -140,6 +141,45 @@ describe('FlipImportSignsUseCase', () => {
 
     await expect(useCase.execute({ userId: USER_ID, importId: 'imp-1' })).rejects.toThrow(
       /concluída/i,
+    );
+  });
+});
+
+describe('DeleteImportUseCase', () => {
+  it('apaga as transações da importação e o registro dela', async () => {
+    const transacoes = new InMemoryTransactionRepository([
+      tx('t1', 2499, 'imp-1'),
+      tx('t2', 7490, 'imp-1'),
+      tx('t3', -12000, 'imp-2'),
+    ]);
+    const importacoes = new InMemoryImportRepository([importacao('imp-1'), importacao('imp-2')]);
+    const useCase = new DeleteImportUseCase(importacoes, transacoes);
+
+    const { deletedTransactions } = await useCase.execute({ userId: USER_ID, importId: 'imp-1' });
+
+    expect(deletedTransactions).toBe(2);
+    expect(transacoes.transactions.map((t) => t.id)).toEqual(['t3']);
+    expect(importacoes.records.map((r) => r.id)).toEqual(['imp-2']);
+  });
+
+  it('apaga também a importação que falhou, sem transação nenhuma', async () => {
+    const importacoes = new InMemoryImportRepository([importacao('imp-1', 'failed')]);
+    const useCase = new DeleteImportUseCase(importacoes, new InMemoryTransactionRepository([]));
+
+    const { deletedTransactions } = await useCase.execute({ userId: USER_ID, importId: 'imp-1' });
+
+    expect(deletedTransactions).toBe(0);
+    expect(importacoes.records).toHaveLength(0);
+  });
+
+  it('recusa importação inexistente', async () => {
+    const useCase = new DeleteImportUseCase(
+      new InMemoryImportRepository([]),
+      new InMemoryTransactionRepository([]),
+    );
+
+    await expect(useCase.execute({ userId: USER_ID, importId: 'x' })).rejects.toThrow(
+      /não encontrad/i,
     );
   });
 });

@@ -59,6 +59,10 @@ export function buildRoutes(route: ControllerResolver): Router {
     '/imports/:id/flip-signs',
     route((c) => c.imports.flip),
   );
+  router.delete(
+    '/imports/:id',
+    route((c) => c.imports.remove),
+  );
 
   router.get(
     '/categories',

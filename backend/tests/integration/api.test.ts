@@ -82,6 +82,7 @@ describe('borda HTTP', () => {
     }
 
     expect([...registradas].sort()).toEqual([
+      'DELETE /imports/:id',
       'GET /accounts',
       'GET /categories',
       'GET /imports',

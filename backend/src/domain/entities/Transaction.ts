@@ -159,7 +159,10 @@ export class Transaction {
    * ele é.
    */
   withDirection(direction: 'expense' | 'income'): Transaction {
-    const desejado = direction === 'expense' ? -Math.abs(this.props.amount.cents) : Math.abs(this.props.amount.cents);
+    const desejado =
+      direction === 'expense'
+        ? -Math.abs(this.props.amount.cents)
+        : Math.abs(this.props.amount.cents);
     if (desejado === this.props.amount.cents) return this;
 
     return new Transaction({ ...this.props, amount: Money.fromCents(desejado) });

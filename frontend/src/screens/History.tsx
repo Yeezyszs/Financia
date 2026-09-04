@@ -5,6 +5,8 @@ import { date, dateTime } from '../format.js';
 import { NewAccountForm } from '../components/NewAccountForm.js';
 import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 
+type Acao = 'flip' | 'delete';
+
 /** O nome da conta é livre, então o banco vira explícito no seletor. */
 function rotuloDoBanco(institution: Account['institution']): string {
   if (institution === 'c6') return 'C6 ·';
@@ -31,11 +33,11 @@ export function History({
     name: string;
     content: string;
   } | null>(null);
-  // Inverter sinais é destrutivo o bastante para não acontecer por um
-  // clique errado, então o botão pede confirmação no lugar dele mesmo.
-  const [confirmandoFlip, setConfirmandoFlip] = useState<string | null>(null);
-  const [flipando, setFlipando] = useState(false);
-  const [flipAviso, setFlipAviso] = useState<string | null>(null);
+  // Inverter e apagar são destrutivos demais para acontecer por um clique
+  // errado, então a confirmação nasce no lugar do próprio botão.
+  const [confirmando, setConfirmando] = useState<{ id: string; acao: Acao } | null>(null);
+  const [ocupado, setOcupado] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const isMobile = useMediaQuery(MOBILE);
 
@@ -56,24 +58,47 @@ export function History({
 
   const inverterSinais = useCallback(
     async (importId: string) => {
-      setFlipando(true);
-      setFlipAviso(null);
+      setOcupado(true);
+      setAviso(null);
       try {
         const { affected } = await api.flipImportSigns(importId);
-        setConfirmandoFlip(null);
-        setFlipAviso(
+        setConfirmando(null);
+        setAviso(
           affected === 1
             ? '1 transação teve o sinal invertido.'
             : `${affected} transações tiveram o sinal invertido.`,
         );
         onImported();
       } catch (err) {
-        setFlipAviso(err instanceof Error ? err.message : 'Não consegui inverter os sinais.');
+        setAviso(err instanceof Error ? err.message : 'Não consegui inverter os sinais.');
       } finally {
-        setFlipando(false);
+        setOcupado(false);
       }
     },
     [onImported],
+  );
+
+  const apagar = useCallback(
+    async (importId: string) => {
+      setOcupado(true);
+      setAviso(null);
+      try {
+        const { deletedTransactions } = await api.deleteImport(importId);
+        setConfirmando(null);
+        setAviso(
+          deletedTransactions === 1
+            ? 'Importação apagada, junto com 1 transação.'
+            : `Importação apagada, junto com ${deletedTransactions} transações.`,
+        );
+        refresh();
+        onImported();
+      } catch (err) {
+        setAviso(err instanceof Error ? err.message : 'Não consegui apagar a importação.');
+      } finally {
+        setOcupado(false);
+      }
+    },
+    [onImported, refresh],
   );
 
   const upload = useCallback(
@@ -124,45 +149,69 @@ export function History({
   );
 
   useEffect(() => {
-    if (!flipAviso) return;
-    const timer = setTimeout(() => setFlipAviso(null), 4500);
+    if (!aviso) return;
+    const timer = setTimeout(() => setAviso(null), 4500);
     return () => clearTimeout(timer);
-  }, [flipAviso]);
+  }, [aviso]);
 
   const accountName = new Map(accounts.map((account) => [account.id, account.name]));
 
-  const botaoInverter = (record: ImportRecord): ReactNode => {
-    if (record.status !== 'completed' || record.rowsImported === 0) return null;
+  const acoes = (record: ImportRecord): ReactNode => {
+    const podeInverter = record.status === 'completed' && record.rowsImported > 0;
+    const emConfirmacao = confirmando?.id === record.id ? confirmando.acao : null;
 
-    return confirmandoFlip === record.id ? (
-      <span className="row" style={{ gap: 8, flexWrap: 'nowrap' }}>
+    if (emConfirmacao) {
+      const apagando = emConfirmacao === 'delete';
+      return (
+        <span className="confirmacao">
+          <span className="confirmacao-texto">
+            {apagando
+              ? record.rowsImported > 0
+                ? `Apagar as ${record.rowsImported} transações desta importação?`
+                : 'Apagar este registro?'
+              : 'Trocar despesas por receitas e vice-versa?'}
+          </span>
+          <button
+            className={apagando ? 'ghost perigo' : 'ghost'}
+            disabled={ocupado}
+            onClick={() => void (apagando ? apagar(record.id) : inverterSinais(record.id))}
+          >
+            {apagando ? 'Apagar' : 'Inverter'}
+          </button>
+          <button className="link acao" onClick={() => setConfirmando(null)}>
+            cancelar
+          </button>
+        </span>
+      );
+    }
+
+    return (
+      <span className="row" style={{ gap: 12, flexWrap: 'nowrap' }}>
+        {podeInverter ? (
+          <button
+            className="link acao"
+            title="Use quando o arquivo entrou com despesas e receitas trocadas"
+            onClick={() => setConfirmando({ id: record.id, acao: 'flip' })}
+          >
+            Inverter sinais
+          </button>
+        ) : null}
         <button
-          className="ghost"
-          disabled={flipando}
-          onClick={() => void inverterSinais(record.id)}
+          className="link acao"
+          title="Apaga as transações que vieram deste arquivo e libera ele para ser importado de novo"
+          onClick={() => setConfirmando({ id: record.id, acao: 'delete' })}
         >
-          Confirmar
-        </button>
-        <button className="link acao" onClick={() => setConfirmandoFlip(null)}>
-          cancelar
+          Apagar
         </button>
       </span>
-    ) : (
-      <button
-        className="link acao"
-        title="Use quando o arquivo entrou com despesas e receitas trocadas"
-        onClick={() => setConfirmandoFlip(record.id)}
-      >
-        Inverter sinais
-      </button>
     );
   };
 
   return (
     <>
-      {flipAviso ? (
+      {aviso ? (
         <div className="toast" role="status">
-          {flipAviso}
+          {aviso}
         </div>
       ) : null}
 
@@ -313,7 +362,7 @@ export function History({
                     <span className="tag">{record.rowsDuplicated} já existiam</span>
                   ) : null}
                 </div>
-                <div className="tx-card-meta">{botaoInverter(record)}</div>
+                <div className="tx-card-meta">{acoes(record)}</div>
                 {record.errorMessage ? (
                   <div className="tx-card-meta" style={{ color: 'var(--danger)' }}>
                     {record.errorMessage}
@@ -373,7 +422,7 @@ export function History({
                         </span>
                       )}
                     </td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{botaoInverter(record)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{acoes(record)}</td>
                   </tr>
                 ))
               )}

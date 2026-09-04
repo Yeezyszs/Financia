@@ -162,6 +162,10 @@ export const api = {
   createImport: (body: { accountId: string; filename: string; content: string; force?: boolean }) =>
     request<ImportResult>('/imports', { method: 'POST', body: JSON.stringify(body) }),
 
+  /** Desfaz a importação: apaga as transações dela e o registro. */
+  deleteImport: (id: string) =>
+    request<{ deletedTransactions: number }>(`/imports/${id}`, { method: 'DELETE' }),
+
   /** Inverte o sinal de uma importação inteira que entrou trocada. */
   flipImportSigns: (id: string) =>
     request<{ affected: number }>(`/imports/${id}/flip-signs`, { method: 'POST' }),

@@ -73,6 +73,9 @@ export interface TransactionRepository {
    */
   flipSignsForImport(userId: string, importId: string): Promise<number>;
 
+  /** Apaga tudo que veio de uma importação. Devolve quantas linhas saíram. */
+  deleteByImport(userId: string, importId: string): Promise<number>;
+
   /** Aplica uma categoria a várias transações de uma vez. */
   setCategoryForMany(
     userId: string,

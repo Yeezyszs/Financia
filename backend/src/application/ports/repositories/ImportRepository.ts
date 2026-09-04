@@ -6,4 +6,7 @@ export interface ImportRepository {
   listByUser(userId: string, options?: { limit?: number; offset?: number }): Promise<Import[]>;
   create(record: Import): Promise<Import>;
   update(record: Import): Promise<Import>;
+
+  /** Remove o registro. As transações são apagadas por quem chama. */
+  delete(userId: string, id: string): Promise<void>;
 }

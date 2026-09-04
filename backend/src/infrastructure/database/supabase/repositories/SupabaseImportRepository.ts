@@ -62,6 +62,11 @@ export class SupabaseImportRepository implements ImportRepository {
     return ImportMapper.toDomain(data as ImportRow);
   }
 
+  async delete(userId: string, id: string): Promise<void> {
+    const { error } = await this.db.from(TABLE).delete().eq('user_id', userId).eq('id', id);
+    if (error) throw error;
+  }
+
   async update(record: Import): Promise<Import> {
     const { data, error } = await this.db
       .from(TABLE)

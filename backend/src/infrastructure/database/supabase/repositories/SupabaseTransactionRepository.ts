@@ -178,6 +178,18 @@ export class SupabaseTransactionRepository implements TransactionRepository {
     return rows.length;
   }
 
+  async deleteByImport(userId: string, importId: string): Promise<number> {
+    // `count: 'exact'` no delete devolve quantas linhas saíram, que é o
+    // número mostrado ao usuário depois de desfazer a importação.
+    const { count, error } = await this.db
+      .from(TABLE)
+      .delete({ count: 'exact' })
+      .eq('user_id', userId)
+      .eq('import_id', importId);
+    if (error) throw error;
+    return count ?? 0;
+  }
+
   async setCategoryForMany(
     userId: string,
     ids: string[],

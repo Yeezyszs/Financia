@@ -1109,3 +1109,23 @@ dialog.modal::backdrop {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* A confirmação nasce no lugar do botão que a pediu, com a consequência
+   escrita por extenso: "Confirmar" sozinho não diz quantas transações
+   somem, e apagar uma importação não tem volta. */
+.confirmacao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.confirmacao-texto {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+button.ghost.perigo {
+  border-color: var(--danger);
+  color: var(--danger);
+}

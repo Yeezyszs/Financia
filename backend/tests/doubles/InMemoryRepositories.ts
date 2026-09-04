@@ -71,6 +71,9 @@ export class InMemoryImportRepository implements ImportRepository {
     this.records = this.records.map((r) => (r.id === record.id ? record : r));
     return record;
   }
+  async delete(userId: string, id: string) {
+    this.records = this.records.filter((r) => !(r.userId === userId && r.id === id));
+  }
 }
 
 export class InMemoryTransactionRepository implements TransactionRepository {
@@ -113,6 +116,13 @@ export class InMemoryTransactionRepository implements TransactionRepository {
       return t.withDirection(t.amount.cents > 0 ? 'expense' : 'income');
     });
     return afetadas;
+  }
+  async deleteByImport(userId: string, importId: string) {
+    const antes = this.transactions.length;
+    this.transactions = this.transactions.filter(
+      (t) => !(t.userId === userId && t.importId === importId),
+    );
+    return antes - this.transactions.length;
   }
   async listRecategorizable(userId: string) {
     return this.transactions

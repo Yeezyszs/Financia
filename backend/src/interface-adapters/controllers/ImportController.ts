@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { ImportStatementUseCase } from '../../application/use-cases/imports/ImportStatementUseCase.js';
 import type { ListImportsUseCase } from '../../application/use-cases/imports/ListImportsUseCase.js';
 import type { FlipImportSignsUseCase } from '../../application/use-cases/imports/FlipImportSignsUseCase.js';
+import type { DeleteImportUseCase } from '../../application/use-cases/imports/DeleteImportUseCase.js';
 import { ImportPresenter } from '../presenters/ImportPresenter.js';
 
 /** Limite defensivo: extrato de um mês não passa de alguns milhares de linhas. */
@@ -25,7 +26,19 @@ export class ImportController {
     private readonly importStatement: ImportStatementUseCase,
     private readonly listImports: ListImportsUseCase,
     private readonly flipSigns: FlipImportSignsUseCase,
+    private readonly deleteImport: DeleteImportUseCase,
   ) {}
+
+  /** Desfaz a importação: apaga as transações dela e o registro. */
+  remove = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const id = z.string().uuid().parse(req.params.id);
+      const result = await this.deleteImport.execute({ userId: req.userId, importId: id });
+      res.json({ data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
 
   /** Corrige uma importação inteira que entrou com o sinal trocado. */
   flip = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
