@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { ApiError, api } from './api/client.js';
-import type { Account, Category } from './api/types.js';
+import type { Account, Category, Drill } from './api/types.js';
 import { supabase } from './supabase.js';
 import { MOBILE, useMediaQuery } from './useMediaQuery.js';
 import { Login } from './Login.js';
@@ -58,6 +58,10 @@ export function App(): ReactNode {
   // Trocar a chave remonta as telas — é como o import força o recarregamento
   // dos dados sem cada tela precisar saber que houve import.
   const [dataVersion, setDataVersion] = useState(0);
+  // O recorte pedido pela Visão geral. O contador serve para remontar
+  // Transações a cada novo clique: sem ele, clicar em outra categoria
+  // com a tela já aberta não trocaria o filtro.
+  const [drill, setDrill] = useState<{ filtro: Drill; n: number } | null>(null);
   const isMobile = useMediaQuery(MOBILE);
 
   useEffect(() => {
@@ -138,12 +142,22 @@ export function App(): ReactNode {
       <main>
         {error ? <div className="notice error">{error}</div> : null}
 
-        {screen === 'overview' ? <Overview key={`overview-${dataVersion}`} /> : null}
+        {screen === 'overview' ? (
+          <Overview
+            key={`overview-${dataVersion}`}
+            onDrill={(filtro) => {
+              setDrill((atual) => ({ filtro, n: (atual?.n ?? 0) + 1 }));
+              setScreen('transactions');
+            }}
+          />
+        ) : null}
         {screen === 'transactions' ? (
           <Transactions
-            key={`transactions-${dataVersion}`}
+            key={`transactions-${dataVersion}-${drill?.n ?? 0}`}
             accounts={accounts}
             categories={categories}
+            {...(drill ? { drill: drill.filtro } : {})}
+            onLimparDrill={() => setDrill(null)}
           />
         ) : null}
         {screen === 'history' ? (

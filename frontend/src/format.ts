@@ -63,3 +63,14 @@ export function monthRange(year: number, month: number): { from: string; to: str
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
   return { from: `${year}-${pad(month)}-01`, to: `${year}-${pad(month)}-${pad(lastDay)}` };
 }
+
+/**
+ * Primeiro dia do mês que está `meses` atrás — o começo da janela de
+ * análise. Vai por `Date.UTC` para não escorregar um dia quando o fuso
+ * do navegador está atrás de Greenwich.
+ */
+export function monthsBefore(year: number, month: number, meses: number): string {
+  const inicio = new Date(Date.UTC(year, month - 1 - meses, 1));
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${inicio.getUTCFullYear()}-${pad(inicio.getUTCMonth() + 1)}-01`;
+}

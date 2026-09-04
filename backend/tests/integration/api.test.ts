@@ -92,6 +92,7 @@ describe('borda HTTP', () => {
       'GET /transactions',
       'PATCH /transactions/:id',
       'PATCH /transactions/:id/category',
+      'PATCH /transactions/categorize',
       'POST /accounts',
       'POST /categories',
       'POST /imports',

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { ListTransactionsUseCase } from '../../application/use-cases/transactions/ListTransactionsUseCase.js';
 import type { CategorizeTransactionUseCase } from '../../application/use-cases/transactions/CategorizeTransactionUseCase.js';
 import type { UpdateTransactionUseCase } from '../../application/use-cases/transactions/UpdateTransactionUseCase.js';
+import type { CategorizeManyUseCase } from '../../application/use-cases/transactions/CategorizeManyUseCase.js';
 import { TransactionPresenter } from '../presenters/TransactionPresenter.js';
 
 const csv = z
@@ -28,6 +29,11 @@ const listSchema = z.object({
   offset: z.coerce.number().int().nonnegative().optional(),
 });
 
+const categorizeManySchema = z.object({
+  transactionIds: z.array(z.string().uuid()).min(1).max(500),
+  categoryId: z.string().uuid(),
+});
+
 const categorizeSchema = z.object({
   categoryId: z.string().uuid().nullable(),
   remember: z.boolean().optional(),
@@ -50,7 +56,19 @@ export class TransactionController {
     private readonly listTransactions: ListTransactionsUseCase,
     private readonly categorizeTransaction: CategorizeTransactionUseCase,
     private readonly updateTransaction: UpdateTransactionUseCase,
+    private readonly categorizeMany: CategorizeManyUseCase,
   ) {}
+
+  /** Categoriza uma seleção feita na tela. Não aprende regra — ver o use case. */
+  categorizeBatch = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const body = categorizeManySchema.parse(req.body);
+      const result = await this.categorizeMany.execute({ userId: req.userId, ...body });
+      res.json({ data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
 
   update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

@@ -129,12 +129,21 @@ export class InMemoryTransactionRepository implements TransactionRepository {
       .filter((t) => t.userId === userId && t.categorizedBy !== 'manual')
       .map((t) => ({ id: t.id, description: t.description, categoryId: t.categoryId }));
   }
-  async setCategoryForMany(userId: string, ids: string[], categoryId: string, isTransfer: boolean) {
+  async setCategoryForMany(
+    userId: string,
+    ids: string[],
+    categoryId: string,
+    isTransfer: boolean,
+    categorizedBy: 'rule' | 'manual',
+  ) {
+    let afetadas = 0;
     this.transactions = this.transactions.map((t) => {
       if (t.userId !== userId || !ids.includes(t.id)) return t;
-      const comCategoria = t.categorize(categoryId, 'rule');
+      afetadas += 1;
+      const comCategoria = t.categorize(categoryId, categorizedBy);
       return isTransfer ? comCategoria.markAsTransfer() : comCategoria.asRegularEntry();
     });
+    return afetadas;
   }
   async categorySeries(): Promise<CategoryMonthPoint[]> {
     return [];

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api } from '../api/client.js';
-import type { Account, Category, Transaction } from '../api/types.js';
+import type { Account, Category, Drill, Transaction } from '../api/types.js';
 import { date, money } from '../format.js';
 import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 import { CategoryPicker } from '../components/CategoryPicker.js';
@@ -11,9 +11,14 @@ const PAGE_SIZE = 50;
 export function Transactions({
   accounts,
   categories,
+  drill,
+  onLimparDrill,
 }: {
   accounts: Account[];
   categories: Category[];
+  /** Recorte vindo da Visão geral, aplicado como estado inicial. */
+  drill?: Drill;
+  onLimparDrill?: () => void;
 }): ReactNode {
   const [items, setItems] = useState<Transaction[]>([]);
   const [total, setTotal] = useState(0);
@@ -21,12 +26,18 @@ export function Transactions({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // O recorte da Visão geral entra como valor inicial, não como trava: a
+  // pessoa chegou perguntando "o que tem por trás deste número" e pode
+  // continuar dali mexendo em qualquer filtro.
   const [accountId, setAccountId] = useState('');
-  const [categoryId, setCategoryId] = useState('');
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
-  const [search, setSearch] = useState('');
+  const [categoryId, setCategoryId] = useState(drill?.categoryIds?.[0] ?? '');
+  const [from, setFrom] = useState(drill?.from ?? '');
+  const [to, setTo] = useState(drill?.to ?? '');
+  const [search, setSearch] = useState(drill?.search ?? '');
   const [includeTransfers, setIncludeTransfers] = useState(false);
+  const [soSemCategoria, setSoSemCategoria] = useState(drill?.onlyUncategorized ?? false);
+  const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
+  const [aplicandoLote, setAplicandoLote] = useState(false);
   const isMobile = useMediaQuery(MOBILE);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [lembrar, setLembrar] = useState(true);
@@ -42,7 +53,7 @@ export function Transactions({
   const [focoNaCategoria, setFocoNaCategoria] = useState(false);
 
   // Busca com debounce para não disparar uma request por tecla digitada.
-  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState(drill?.search ?? '');
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timer);
@@ -52,7 +63,7 @@ export function Transactions({
   // offset antigo mostraria uma página vazia sem explicação.
   useEffect(() => {
     setOffset(0);
-  }, [accountId, categoryId, from, to, debouncedSearch, includeTransfers]);
+  }, [accountId, categoryId, from, to, debouncedSearch, includeTransfers, soSemCategoria]);
 
   useEffect(() => {
     let active = true;
@@ -67,6 +78,7 @@ export function Transactions({
         ...(to ? { to } : {}),
         ...(debouncedSearch ? { search: debouncedSearch } : {}),
         ...(includeTransfers ? { includeTransfers: true } : {}),
+        ...(soSemCategoria ? { onlyUncategorized: true } : {}),
         limit: PAGE_SIZE,
         offset,
       })
@@ -85,7 +97,13 @@ export function Transactions({
     return () => {
       active = false;
     };
-  }, [accountId, categoryId, from, to, debouncedSearch, includeTransfers, offset]);
+  }, [accountId, categoryId, from, to, debouncedSearch, includeTransfers, soSemCategoria, offset]);
+
+  // Sair da página com linhas marcadas e aplicar a categoria na página
+  // seguinte seria aplicar em transações que a pessoa não está vendo.
+  useEffect(() => {
+    setSelecionados(new Set());
+  }, [offset, accountId, categoryId, from, to, debouncedSearch, includeTransfers, soSemCategoria]);
 
   /**
    * Atualiza a linha localmente em vez de recarregar a lista inteira:
@@ -173,6 +191,45 @@ export function Transactions({
     return category;
   }, []);
 
+  const alternar = useCallback((id: string) => {
+    setSelecionados((atuais) => {
+      const proximo = new Set(atuais);
+      if (proximo.has(id)) proximo.delete(id);
+      else proximo.add(id);
+      return proximo;
+    });
+  }, []);
+
+  const aplicarEmLote = useCallback(
+    async (categoryId: string | null) => {
+      if (!categoryId || selecionados.size === 0) return;
+
+      const ids = [...selecionados];
+      setAplicandoLote(true);
+      setAviso(null);
+      try {
+        const { affected } = await api.categorizeMany({ transactionIds: ids, categoryId });
+        const marcadas = new Set(ids);
+        setItems((atuais) =>
+          atuais.map((item) =>
+            marcadas.has(item.id)
+              ? { ...item, categoryId, categorizedBy: 'manual' as const }
+              : item,
+          ),
+        );
+        setSelecionados(new Set());
+        setAviso(
+          affected === 1 ? '1 transação categorizada.' : `${affected} transações categorizadas.`,
+        );
+      } catch (err) {
+        setAviso(err instanceof Error ? err.message : 'Não consegui aplicar a categoria.');
+      } finally {
+        setAplicandoLote(false);
+      }
+    },
+    [selecionados],
+  );
+
   const categoriasDisponiveis = useMemo(() => {
     const porId = new Map(categories.map((c) => [c.id, c]));
     for (const nova of novasCategorias) if (!porId.has(nova.id)) porId.set(nova.id, nova);
@@ -201,6 +258,27 @@ export function Transactions({
         {total} {total === 1 ? 'transação' : 'transações'} no filtro atual. Clique na descrição para
         escrever uma categoria ou uma observação.
       </p>
+
+      {drill ? (
+        <div className="drill-chip">
+          <span>
+            Vindo da Visão geral: <b>{drill.rotulo}</b>
+          </span>
+          <button
+            className="link acao"
+            onClick={() => {
+              setCategoryId('');
+              setFrom('');
+              setTo('');
+              setSearch('');
+              setSoSemCategoria(false);
+              onLimparDrill?.();
+            }}
+          >
+            limpar
+          </button>
+        </div>
+      ) : null}
 
       {isMobile ? (
         <button
@@ -272,10 +350,50 @@ export function Transactions({
 
       {error ? <div className="notice error">{error}</div> : null}
 
-      <label className="check-line">
-        <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} />
-        <span>Lembrar minha escolha para o mesmo estabelecimento</span>
-      </label>
+      <div className="linha-acoes">
+        <label className="check-line" style={{ margin: 0 }}>
+          <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} />
+          <span>Lembrar minha escolha para o mesmo estabelecimento</span>
+        </label>
+
+        {/* É o modo de trabalho de depois de cada importação, então é um
+            botão e não mais uma linha escondida dentro dos filtros. */}
+        <button
+          className={soSemCategoria ? 'ghost ativo' : 'ghost'}
+          aria-pressed={soSemCategoria}
+          onClick={() => setSoSemCategoria((atual) => !atual)}
+        >
+          Só o que falta categorizar
+        </button>
+      </div>
+
+      {selecionados.size > 0 ? (
+        <div className="barra-lote">
+          <span>
+            <b>{selecionados.size}</b> {selecionados.size === 1 ? 'selecionada' : 'selecionadas'}{' '}
+            nesta página
+          </span>
+          {/* Select próprio, e não o CategoryPicker: aqui o campo não
+              mostra um estado, ele dispara uma ação — e "sem categoria"
+              como rótulo do que está selecionado seria mentira. */}
+          <select
+            value=""
+            disabled={aplicandoLote}
+            aria-label="Aplicar categoria às selecionadas"
+            onChange={(e) => void aplicarEmLote(e.target.value)}
+          >
+            <option value="">aplicar categoria…</option>
+            {categoriasDisponiveis.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name}
+              </option>
+            ))}
+          </select>
+          <button className="link acao" onClick={() => setSelecionados(new Set())}>
+            limpar seleção
+          </button>
+        </div>
+      ) : null}
 
       {aviso ? (
         <div className="toast" role="status">
@@ -299,8 +417,18 @@ export function Transactions({
             </div>
           ) : (
             items.map((transaction) => (
-              <article className="tx-card" key={transaction.id}>
+              <article
+                className={selecionados.has(transaction.id) ? 'tx-card marcada' : 'tx-card'}
+                key={transaction.id}
+              >
                 <div className="tx-card-top">
+                  <input
+                    type="checkbox"
+                    className="tx-check"
+                    aria-label={`Selecionar ${transaction.description}`}
+                    checked={selecionados.has(transaction.id)}
+                    onChange={() => alternar(transaction.id)}
+                  />
                   <button
                     className="link tx-desc"
                     onClick={() => {
@@ -320,7 +448,6 @@ export function Transactions({
                   <span>{date(transaction.occurredOn)}</span>
                   <span aria-hidden="true">·</span>
                   <span>{accountName.get(transaction.accountId) ?? '—'}</span>
-                  <span aria-hidden="true">·</span>
                   <CategoryPicker
                     value={transaction.categoryId}
                     categories={categoriasDisponiveis}
@@ -346,6 +473,24 @@ export function Transactions({
           <table>
             <thead>
               <tr>
+                <th className="col-check">
+                  <input
+                    type="checkbox"
+                    aria-label="Selecionar todas desta página"
+                    checked={items.length > 0 && selecionados.size === items.length}
+                    ref={(el) => {
+                      // Meio-termo: algumas marcadas, não todas.
+                      if (el)
+                        el.indeterminate =
+                          selecionados.size > 0 && selecionados.size < items.length;
+                    }}
+                    onChange={(e) =>
+                      setSelecionados(
+                        e.target.checked ? new Set(items.map((item) => item.id)) : new Set(),
+                      )
+                    }
+                  />
+                </th>
                 <th>Data</th>
                 <th>Descrição</th>
                 <th>Conta</th>
@@ -356,7 +501,7 @@ export function Transactions({
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={6}>
                     <div className="stack" style={{ padding: '8px 0' }}>
                       {[0, 1, 2, 3, 4].map((i) => (
                         <span key={i} className="skeleton" />
@@ -366,7 +511,7 @@ export function Transactions({
                 </tr>
               ) : items.length === 0 ? (
                 <tr>
-                  <td colSpan={5}>
+                  <td colSpan={6}>
                     <div className="empty">
                       Nada aqui. Ajuste os filtros ou importe um extrato em Histórico.
                     </div>
@@ -374,7 +519,18 @@ export function Transactions({
                 </tr>
               ) : (
                 items.map((transaction) => (
-                  <tr key={transaction.id}>
+                  <tr
+                    key={transaction.id}
+                    className={selecionados.has(transaction.id) ? 'marcada' : undefined}
+                  >
+                    <td className="col-check">
+                      <input
+                        type="checkbox"
+                        aria-label={`Selecionar ${transaction.description}`}
+                        checked={selecionados.has(transaction.id)}
+                        onChange={() => alternar(transaction.id)}
+                      />
+                    </td>
                     <td style={{ whiteSpace: 'nowrap' }}>{date(transaction.occurredOn)}</td>
                     <td>
                       <button

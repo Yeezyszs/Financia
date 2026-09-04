@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { Snapshot } from '../api/types.js';
+import type { Drill, RecurringItem, Snapshot } from '../api/types.js';
 import { money } from '../format.js';
 
 /**
@@ -10,7 +10,14 @@ import { money } from '../format.js';
  * (mercado, delivery) só dá para reduzir. O conselho que cabe em cada
  * caso é diferente, então a tela também trata diferente.
  */
-export function RecurringCard({ snapshot }: { snapshot: Snapshot }): ReactNode {
+export function RecurringCard({
+  snapshot,
+  onDrill,
+}: {
+  snapshot: Snapshot;
+  /** Abre as compras do estabelecimento dentro da janela analisada. */
+  onDrill?: (drill: Omit<Drill, 'from' | 'to'>) => void;
+}): ReactNode {
   const { subscriptions, recurring, fixedMonthlyCents, variableMonthlyCents } = snapshot;
 
   if (subscriptions.length === 0 && recurring.length === 0) {
@@ -21,6 +28,21 @@ export function RecurringCard({ snapshot }: { snapshot: Snapshot }): ReactNode {
       </div>
     );
   }
+
+  // A busca usa a chave normalizada do estabelecimento ("ifood"), e não
+  // o rótulo: o rótulo pode ser a descrição inteira de uma ocorrência, que
+  // não casaria com as outras do mesmo grupo.
+  const rotulo = (item: RecurringItem) =>
+    onDrill ? (
+      <button
+        className="link acao rec-label"
+        onClick={() => onDrill({ rotulo: item.label, search: item.key })}
+      >
+        {item.label}
+      </button>
+    ) : (
+      <span className="rec-label">{item.label}</span>
+    );
 
   const total = fixedMonthlyCents + variableMonthlyCents;
   const fatiaFixa = total > 0 ? Math.round((fixedMonthlyCents / total) * 100) : 0;
@@ -44,7 +66,7 @@ export function RecurringCard({ snapshot }: { snapshot: Snapshot }): ReactNode {
           <h3 className="card-title">Assinaturas ({subscriptions.length})</h3>
           {subscriptions.slice(0, 6).map((item) => (
             <div className="rec-row" key={item.key}>
-              <span className="rec-label">{item.label}</span>
+              {rotulo(item)}
               <span className="cat-value">{money(item.typicalCents)}/mês</span>
               <span className="rec-meta">
                 {item.monthsSeen} meses · última em {item.lastSeen.slice(8, 10)}/
@@ -61,7 +83,7 @@ export function RecurringCard({ snapshot }: { snapshot: Snapshot }): ReactNode {
           <h3 className="card-title">Recorrentes de valor variável ({recurring.length})</h3>
           {recurring.slice(0, 5).map((item) => (
             <div className="rec-row" key={item.key}>
-              <span className="rec-label">{item.label}</span>
+              {rotulo(item)}
               <span className="cat-value">{money(item.monthlyAverageCents)}/mês</span>
               <span className="rec-meta">
                 {item.occurrences} compras em {item.monthsSeen} meses · normalmente{' '}

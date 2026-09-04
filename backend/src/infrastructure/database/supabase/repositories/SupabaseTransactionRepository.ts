@@ -195,20 +195,25 @@ export class SupabaseTransactionRepository implements TransactionRepository {
     ids: string[],
     categoryId: string,
     isTransfer: boolean,
-  ): Promise<void> {
-    if (ids.length === 0) return;
+    categorizedBy: 'rule' | 'manual',
+  ): Promise<number> {
+    if (ids.length === 0) return 0;
 
-    const { error } = await this.db
+    const { count, error } = await this.db
       .from(TABLE)
-      .update({
-        category_id: categoryId,
-        categorized_by: 'rule',
-        is_transfer: isTransfer,
-        ...(isTransfer ? {} : { counterpart_transaction_id: null }),
-      })
+      .update(
+        {
+          category_id: categoryId,
+          categorized_by: categorizedBy,
+          is_transfer: isTransfer,
+          ...(isTransfer ? {} : { counterpart_transaction_id: null }),
+        },
+        { count: 'exact' },
+      )
       .eq('user_id', userId)
       .in('id', ids);
     if (error) throw error;
+    return count ?? 0;
   }
 
   async categorySeries(userId: string, from: string, to: string): Promise<CategoryMonthPoint[]> {

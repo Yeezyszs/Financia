@@ -138,7 +138,7 @@ export class CategorizeTransactionUseCase {
     if (alvos.length === 0) return [];
 
     const ids = alvos.map((alvo) => alvo.id);
-    await this.transactions.setCategoryForMany(userId, ids, category.id, isTransfer);
+    await this.transactions.setCategoryForMany(userId, ids, category.id, isTransfer, 'rule');
 
     return ids;
   }

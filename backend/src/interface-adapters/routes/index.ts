@@ -39,6 +39,11 @@ export function buildRoutes(route: ControllerResolver): Router {
     route((c) => c.transactions.list),
   );
 
+  // Antes da rota com `:id`, senão "categorize" seria lido como um id.
+  router.patch(
+    '/transactions/categorize',
+    route((c) => c.transactions.categorizeBatch),
+  );
   router.patch(
     '/transactions/:id',
     route((c) => c.transactions.update),

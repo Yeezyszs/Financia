@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { CategoryBreakdown } from '../api/types.js';
+import type { CategoryBreakdown, Drill } from '../api/types.js';
 import { money } from '../format.js';
 
 const MAX_ROWS = 8;
@@ -12,7 +12,14 @@ const MAX_ROWS = 8;
  * hues indistinguíveis sob daltonismo sem informar nada a mais. Da nona
  * categoria em diante a cauda vira "Outras".
  */
-export function CategoryChart({ data }: { data: CategoryBreakdown[] }): ReactNode {
+export function CategoryChart({
+  data,
+  onDrill,
+}: {
+  data: CategoryBreakdown[];
+  /** Abre as transações por trás da barra. A cauda "Outras" não abre. */
+  onDrill?: (drill: Omit<Drill, 'from' | 'to'>) => void;
+}): ReactNode {
   if (data.length === 0) {
     return <div className="empty">Nenhuma despesa no período.</div>;
   }
@@ -34,13 +41,32 @@ export function CategoryChart({ data }: { data: CategoryBreakdown[] }): ReactNod
   const max = Math.max(...rows.map((row) => row.totalCents));
   const total = data.reduce((sum, row) => sum + row.totalCents, 0);
 
+  // A linha "Outras (n)" é um agregado de várias categorias: não existe
+  // filtro que a reproduza, então ela não vira link.
+  const agregado = (row: CategoryBreakdown) => row.name.startsWith('Outras (');
+
   return (
     <div>
       {rows.map((row) => {
         const share = total > 0 ? Math.round((row.totalCents / total) * 100) : 0;
+        const abrir =
+          onDrill && !agregado(row)
+            ? () =>
+                onDrill(
+                  row.categoryId
+                    ? { rotulo: row.name, categoryIds: [row.categoryId] }
+                    : { rotulo: 'Sem categoria', onlyUncategorized: true },
+                )
+            : null;
         return (
           <div className="cat-row" key={row.categoryId ?? row.name}>
-            <span>{row.name}</span>
+            {abrir ? (
+              <button className="link acao" onClick={abrir}>
+                {row.name}
+              </button>
+            ) : (
+              <span>{row.name}</span>
+            )}
             <span className="cat-value">
               {money(row.totalCents)} · {share}%
             </span>

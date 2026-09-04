@@ -76,13 +76,20 @@ export interface TransactionRepository {
   /** Apaga tudo que veio de uma importação. Devolve quantas linhas saíram. */
   deleteByImport(userId: string, importId: string): Promise<number>;
 
-  /** Aplica uma categoria a várias transações de uma vez. */
+  /**
+   * Aplica uma categoria a várias transações de uma vez.
+   *
+   * `categorizedBy` distingue as duas origens: a regra aprendida marca
+   * `rule`, e uma escolha em lote feita na tela marca `manual` — que é o
+   * que impede uma regra futura de sobrescrever a decisão da pessoa.
+   */
   setCategoryForMany(
     userId: string,
     ids: string[],
     categoryId: string,
     isTransfer: boolean,
-  ): Promise<void>;
+    categorizedBy: 'rule' | 'manual',
+  ): Promise<number>;
 
   /** Série mensal por categoria no intervalo — base da análise de tendência. */
   categorySeries(userId: string, from: string, to: string): Promise<CategoryMonthPoint[]>;

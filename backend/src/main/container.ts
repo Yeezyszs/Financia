@@ -14,6 +14,7 @@ import { ListAccountsUseCase } from '../application/use-cases/accounts/ListAccou
 import { ListTransactionsUseCase } from '../application/use-cases/transactions/ListTransactionsUseCase.js';
 import { CategorizeTransactionUseCase } from '../application/use-cases/transactions/CategorizeTransactionUseCase.js';
 import { UpdateTransactionUseCase } from '../application/use-cases/transactions/UpdateTransactionUseCase.js';
+import { CategorizeManyUseCase } from '../application/use-cases/transactions/CategorizeManyUseCase.js';
 import { FlipImportSignsUseCase } from '../application/use-cases/imports/FlipImportSignsUseCase.js';
 import { DeleteImportUseCase } from '../application/use-cases/imports/DeleteImportUseCase.js';
 import { ImportStatementUseCase } from '../application/use-cases/imports/ImportStatementUseCase.js';
@@ -76,6 +77,7 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
   );
   const listImports = new ListImportsUseCase(importRepository);
   const updateTransaction = new UpdateTransactionUseCase(transactionRepository);
+  const categorizeMany = new CategorizeManyUseCase(transactionRepository, categoryRepository);
   const flipImportSigns = new FlipImportSignsUseCase(importRepository, transactionRepository);
   const deleteImport = new DeleteImportUseCase(importRepository, transactionRepository);
   const getOverview = new GetOverviewUseCase(transactionRepository, categoryRepository);
@@ -89,6 +91,7 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
       listTransactions,
       categorizeTransaction,
       updateTransaction,
+      categorizeMany,
     ),
     imports: new ImportController(importStatement, listImports, flipImportSigns, deleteImport),
     reports: new ReportController(getOverview, getSnapshot),

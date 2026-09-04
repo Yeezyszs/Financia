@@ -1,12 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api/client.js';
-import type { Overview as OverviewData, Snapshot } from '../api/types.js';
+import type { Drill, Overview as OverviewData, Snapshot } from '../api/types.js';
 import { CategoryChart } from '../components/CategoryChart.js';
 import { MonthlyChart } from '../components/MonthlyChart.js';
 import { RecurringCard } from '../components/RecurringCard.js';
 import { TrendList } from '../components/TrendList.js';
 import { ExportSummary } from '../components/ExportSummary.js';
-import { money, monthRange } from '../format.js';
+import { money, monthRange, monthsBefore } from '../format.js';
 import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 
 const MONTHS = [
@@ -24,7 +24,7 @@ const MONTHS = [
   'Dezembro',
 ];
 
-export function Overview(): ReactNode {
+export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): ReactNode {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
@@ -88,6 +88,21 @@ export function Overview(): ReactNode {
 
   const balancePositive = (data?.balanceCents ?? 0) >= 0;
 
+  // Quanto da renda sobrou. É o número que muda comportamento — "sobrou
+  // R$ 4 mil" não diz se foi um mês bom sem a renda ao lado.
+  const receita = data?.incomeCents ?? 0;
+  const taxaPoupanca = receita > 0 ? Math.round(((data?.balanceCents ?? 0) / receita) * 100) : null;
+
+  const doMes = monthRange(year, month);
+  const daJanela = { from: monthsBefore(year, month, janela - 1), to: doMes.to };
+
+  /** Recorte do mês: cards de topo e despesas por categoria. */
+  const drillDoMes = (parcial: Omit<Drill, 'from' | 'to'>) => onDrill({ ...parcial, ...doMes });
+
+  /** Recorte da janela de análise: recorrentes e variações. */
+  const drillDaJanela = (parcial: Omit<Drill, 'from' | 'to'>) =>
+    onDrill({ ...parcial, ...daJanela });
+
   return (
     <>
       <h1 className="page-title">Visão geral</h1>
@@ -96,9 +111,13 @@ export function Overview(): ReactNode {
         da fatura — ficam de fora dos totais.
       </p>
 
+      {/* Só o mês fica aqui em cima, porque é o único controle que
+          governa a página toda. Ano e janela de análise moram no
+          cabeçalho do card que cada um controla — juntos os três
+          pareciam governar tudo, e nenhum governava. */}
       <div className="filters filters--compact">
         <div className="field">
-          <label htmlFor="mes">Mês</label>
+          <label htmlFor="mes">Mês de referência</label>
           <select id="mes" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
             {MONTHS.map((name, index) => (
               <option key={name} value={index + 1}>
@@ -107,16 +126,6 @@ export function Overview(): ReactNode {
             ))}
           </select>
         </div>
-        <div className="field">
-          <label htmlFor="janela">Análise</label>
-          <select id="janela" value={janela} onChange={(e) => setJanela(Number(e.target.value))}>
-            <option value={3}>Últimos 3 meses</option>
-            <option value={6}>Últimos 6 meses</option>
-            <option value={12}>Últimos 12 meses</option>
-            <option value={24}>Últimos 24 meses</option>
-          </select>
-        </div>
-
         <div className="field">
           <label htmlFor="ano">Ano</label>
           <select id="ano" value={year} onChange={(e) => setYear(Number(e.target.value))}>
@@ -171,7 +180,11 @@ export function Overview(): ReactNode {
             )}
           </div>
           <p className="kpi-hint">
-            {balancePositive ? 'Receitas maiores que despesas' : 'Despesas maiores que receitas'}
+            {taxaPoupanca === null
+              ? balancePositive
+                ? 'Receitas maiores que despesas'
+                : 'Despesas maiores que receitas'
+              : `${taxaPoupanca}% da renda do mês`}
           </p>
         </div>
       </div>
@@ -192,18 +205,33 @@ export function Overview(): ReactNode {
               ))}
             </div>
           ) : (
-            <CategoryChart data={data?.expensesByCategory ?? []} />
+            <CategoryChart data={data?.expensesByCategory ?? []} onDrill={drillDoMes} />
           )}
         </div>
       </div>
 
       <div className="chart-grid" style={{ marginTop: 14 }}>
         <div className="card">
-          <h2 className="card-title">Gastos recorrentes · últimos {janela} meses</h2>
+          <div className="card-head">
+            <h2 className="card-title">Gastos recorrentes</h2>
+            {/* O controle mora aqui porque é só isto que ele governa —
+                este card, o de variações e o resumo exportado. */}
+            <select
+              className="card-control"
+              value={janela}
+              onChange={(e) => setJanela(Number(e.target.value))}
+              aria-label="Janela da análise de recorrência"
+            >
+              <option value={3}>últimos 3 meses</option>
+              <option value={6}>últimos 6 meses</option>
+              <option value={12}>últimos 12 meses</option>
+              <option value={24}>últimos 24 meses</option>
+            </select>
+          </div>
           {erroSnapshot ? (
             <div className="notice error">{erroSnapshot}</div>
           ) : snapshot ? (
-            <RecurringCard snapshot={snapshot} />
+            <RecurringCard snapshot={snapshot} onDrill={drillDaJanela} />
           ) : (
             <div className="stack">
               {[0, 1, 2].map((i) => (
@@ -214,11 +242,13 @@ export function Overview(): ReactNode {
         </div>
 
         <div className="card">
-          <h2 className="card-title">O que mudou neste mês</h2>
+          <h2 className="card-title">
+            {MONTHS[month - 1]} comparado à média dos últimos {janela} meses
+          </h2>
           {erroSnapshot ? (
             <div className="notice error">{erroSnapshot}</div>
           ) : snapshot ? (
-            <TrendList trends={snapshot.trends} />
+            <TrendList trends={snapshot.trends} onDrill={drillDoMes} />
           ) : (
             <div className="stack">
               {[0, 1, 2].map((i) => (

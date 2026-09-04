@@ -138,6 +138,13 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  /** Aplica uma categoria a várias de uma vez. Não aprende regra. */
+  categorizeMany: (body: { transactionIds: string[]; categoryId: string }) =>
+    request<{ affected: number }>('/transactions/categorize', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+
   categorizeTransaction: (id: string, body: { categoryId: string | null; remember?: boolean }) =>
     request<{
       transaction: Transaction;

@@ -84,6 +84,21 @@ export interface ImportResult {
   periodEnd: string | null;
 }
 
+/**
+ * Um recorte pedido pela Visão geral: "me mostre as transações por trás
+ * deste número". `rotulo` é o que a tela de Transações exibe para dizer
+ * de onde a pessoa veio — sem isso o filtro aplicado parece ter surgido
+ * do nada.
+ */
+export interface Drill {
+  rotulo: string;
+  categoryIds?: string[];
+  from?: string;
+  to?: string;
+  search?: string;
+  onlyUncategorized?: boolean;
+}
+
 export interface TransactionQuery {
   accountIds?: string[];
   categoryIds?: string[];
