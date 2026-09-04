@@ -1,11 +1,12 @@
 export type AccountType = 'checking' | 'credit_card';
+export type Institution = 'nubank' | 'c6' | 'manual';
 export type CategoryKind = 'income' | 'expense' | 'transfer';
 
 export interface Account {
   id: string;
   name: string;
   type: AccountType;
-  institution: string;
+  institution: Institution;
   currency: string;
   settlementAccountId: string | null;
   isActive: boolean;

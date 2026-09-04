@@ -64,18 +64,31 @@ export function detectDelimiter(content: string): ',' | ';' {
   return (firstLine.match(/;/g)?.length ?? 0) > (firstLine.match(/,/g)?.length ?? 0) ? ';' : ',';
 }
 
-/** Índice de uma coluna aceitando variações de nome/acento/caixa. */
+/**
+ * Índice de uma coluna aceitando variações de nome, acento, caixa e
+ * pontuação — "Valor (em R$)" e "valor em r" são a mesma coluna.
+ *
+ * A ordem dos candidatos decide o desempate: numa fatura com `Valor (em
+ * US$)` e `Valor (em R$)` lado a lado, quem pedir "valor em r" antes de
+ * "valor" pega a coluna certa. E um candidato genérico não casa com o
+ * cabeçalho específico, então, na falta da coluna em reais, o parser
+ * falha em vez de importar dólar como se fosse real.
+ */
 export function columnIndex(header: string[], candidates: string[]): number {
-  const normalized = header.map((h) =>
-    h
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLowerCase()
-      .trim(),
-  );
+  const normalized = header.map(normalizeHeader);
+
   for (const candidate of candidates) {
-    const index = normalized.indexOf(candidate);
+    const index = normalized.indexOf(normalizeHeader(candidate));
     if (index !== -1) return index;
   }
   return -1;
+}
+
+function normalizeHeader(name: string): string {
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
 }

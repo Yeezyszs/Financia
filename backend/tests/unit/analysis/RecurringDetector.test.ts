@@ -20,7 +20,9 @@ describe('merchantKey', () => {
   });
 
   it('descarta o prefixo que o banco cola na frente', () => {
-    expect(merchantKey('Compra no débito - ASSAI ATACADISTA')).toBe(merchantKey('ASSAI ATACADISTA'));
+    expect(merchantKey('Compra no débito - ASSAI ATACADISTA')).toBe(
+      merchantKey('ASSAI ATACADISTA'),
+    );
   });
 
   it('trata parcelas como a mesma compra', () => {

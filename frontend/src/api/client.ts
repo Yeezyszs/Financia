@@ -108,8 +108,11 @@ export const api = {
   transactions: (query: TransactionQuery = {}) =>
     requestPage<Transaction[]>(`/transactions${toQueryString(query as Record<string, unknown>)}`),
 
-  createAccount: (body: { name: string; type: Account['type']; institution?: string }) =>
-    request<Account>('/accounts', { method: 'POST', body: JSON.stringify(body) }),
+  createAccount: (body: {
+    name: string;
+    type: Account['type'];
+    institution?: Account['institution'];
+  }) => request<Account>('/accounts', { method: 'POST', body: JSON.stringify(body) }),
 
   categorizeTransaction: (id: string, body: { categoryId: string | null; remember?: boolean }) =>
     request<{

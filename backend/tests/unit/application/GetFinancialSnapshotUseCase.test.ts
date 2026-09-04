@@ -5,12 +5,13 @@ import type {
   TransactionRepository,
 } from '../../../src/application/ports/repositories/TransactionRepository.js';
 import type { AnalyzableTransaction } from '../../../src/domain/analysis/RecurringDetector.js';
-import { InMemoryCategoryRepository, makeCategory, USER_ID } from '../../doubles/InMemoryRepositories.js';
+import {
+  InMemoryCategoryRepository,
+  makeCategory,
+  USER_ID,
+} from '../../doubles/InMemoryRepositories.js';
 
-function repo(
-  series: CategoryMonthPoint[],
-  raw: AnalyzableTransaction[],
-): TransactionRepository {
+function repo(series: CategoryMonthPoint[], raw: AnalyzableTransaction[]): TransactionRepository {
   return {
     categorySeries: async () => series,
     listForAnalysis: async () => raw,
@@ -22,7 +23,12 @@ const categorias = new InMemoryCategoryRepository([
   makeCategory('cat-food', 'Alimentação', 'expense'),
 ]);
 
-function tx(occurredOn: string, description: string, amountCents: number, categoryId: string | null) {
+function tx(
+  occurredOn: string,
+  description: string,
+  amountCents: number,
+  categoryId: string | null,
+) {
   return { occurredOn, description, amountCents, categoryId };
 }
 
@@ -70,7 +76,11 @@ describe('GetFinancialSnapshotUseCase', () => {
     const snapshot = await useCase.execute({ userId: USER_ID, referenceMonth: '2026-08' });
     const alimentacao = snapshot.trends.find((t) => t.name === 'Alimentação');
 
-    expect(alimentacao).toMatchObject({ currentCents: 150000, averageCents: 100000, changePercent: 50 });
+    expect(alimentacao).toMatchObject({
+      currentCents: 150000,
+      averageCents: 100000,
+      changePercent: 50,
+    });
   });
 
   it('não inventa variação quando não há histórico', async () => {

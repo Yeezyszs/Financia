@@ -148,9 +148,7 @@ export class InMemoryCategoryRepository implements CategoryRepository {
     return category;
   }
   async update(category: Category) {
-    this.categories = this.categories.map((atual) =>
-      atual.id === category.id ? category : atual,
-    );
+    this.categories = this.categories.map((atual) => (atual.id === category.id ? category : atual));
     return category;
   }
   async delete() {}
@@ -222,7 +220,12 @@ export function makeCategory(id: string, name: string, kind: Category['kind']): 
   return new Category({ id, userId: USER_ID, name, kind, color: null, icon: null, isSystem: true });
 }
 
-export function makeRule(id: string, pattern: string, categoryId: string, priority = 10): CategoryRule {
+export function makeRule(
+  id: string,
+  pattern: string,
+  categoryId: string,
+  priority = 10,
+): CategoryRule {
   return new CategoryRule({
     id,
     userId: USER_ID,

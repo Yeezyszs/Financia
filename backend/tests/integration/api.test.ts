@@ -46,7 +46,9 @@ describe('borda HTTP', () => {
   });
 
   it('rejeita token que não é um JWT decodificável', async () => {
-    const response = await request(app).get('/api/accounts').set('Authorization', 'Bearer nao-e-jwt');
+    const response = await request(app)
+      .get('/api/accounts')
+      .set('Authorization', 'Bearer nao-e-jwt');
     expect(response.status).toBe(401);
     expect(response.body.error.code).toBe('INVALID_TOKEN');
   });

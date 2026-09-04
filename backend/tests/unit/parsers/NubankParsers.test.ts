@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { NubankCheckingParser } from '../../../src/infrastructure/parsers/nubank/NubankCheckingParser.js';
-import { NubankCreditCardParser } from '../../../src/infrastructure/parsers/nubank/NubankCreditCardParser.js';
+import { StatementCsvParser } from '../../../src/infrastructure/parsers/csv/StatementCsvParser.js';
+import { NUBANK_CARTAO, NUBANK_CONTA } from '../../../src/infrastructure/parsers/layouts/index.js';
 import { EXTRATO_BR, EXTRATO_ISO, FATURA } from '../../fixtures/nubank.js';
 
 describe('NubankCheckingParser', () => {
-  const parser = new NubankCheckingParser();
+  const parser = new StatementCsvParser(NUBANK_CONTA);
 
   it('lê o layout date,title,amount preservando o sinal', () => {
     const { rows, periodStart, periodEnd } = parser.parse(EXTRATO_ISO);
@@ -47,7 +47,7 @@ describe('NubankCheckingParser', () => {
 });
 
 describe('NubankCreditCardParser', () => {
-  const parser = new NubankCreditCardParser();
+  const parser = new StatementCsvParser(NUBANK_CARTAO);
 
   it('inverte o sinal: compra na fatura vira saída', () => {
     const { rows } = parser.parse(FATURA);

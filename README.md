@@ -51,7 +51,7 @@ A regra de dependência aponta sempre para dentro: `infrastructure → interface
 
 **Multiusuário desde já.** Todas as tabelas carregam `user_id` e têm RLS ligada (`auth.uid() = user_id`). Hoje o backend roda single-user: o `user_id` vem do `.env` via o middleware `currentUser`. Quando entrar login de verdade, só esse middleware muda.
 
-**C6 adiado, porta pronta.** `StatementParser` é a porta de ingestão. Nubank conta corrente e fatura serão dois adapters; C6 entra como um terceiro sem tocar em caso de uso.
+**Bancos são configuração, não código.** `StatementParser` é a porta de ingestão, e os quatro layouts suportados — extrato e fatura de Nubank e C6 — são entradas em `parsers/layouts`. Eles diferem só em nome de coluna e convenção de sinal; a leitura (aspas, delimitador, formato de data e de valor) é a mesma e vive num único parser configurável. Um banco novo é uma entrada na lista.
 
 ## Banco
 
@@ -129,6 +129,15 @@ O caminho de um arquivo: **parser do banco → fingerprint por linha → descart
 **Duas barreiras contra duplicata, de propósito.** O hash do arquivo inteiro pega o "importei esse extrato de novo" e responde com erro claro (`force: true` passa por cima). O fingerprint por linha pega o caso real de quem importa toda semana: dois arquivos com períodos sobrepostos entram e só as linhas novas viram transação.
 
 **Sinal do valor.** No extrato da conta corrente o valor já vem com sinal (entrada positiva, saída negativa). Na fatura do cartão, não: a compra vem positiva porque é o valor *cobrado*. O parser da fatura inverte o sinal na entrada, e é a única diferença real entre os dois adapters. Isso está baseado no layout conhecido do export — **confirmar com uma fatura real antes de fechar o primeiro mês**; se o seu export já vier com compra negativa, é a constante `INVERT_SIGN` em `NubankCreditCardParser`.
+
+**Valor em reais, nunca em dólar.** A fatura do C6 traz `Valor (em US$)` ao lado de
+`Valor (em R$)` quando houve conversão. A ordem dos apelidos de coluna resolve o
+desempate, e um candidato genérico não casa com o cabeçalho específico — na falta da
+coluna em reais o parser falha em vez de importar dólar como se fosse real.
+
+**Parcela vira parte da descrição.** O C6 publica `Parcela` em coluna própria; sem
+anexá-la, "NETFLIX" de janeiro e de fevereiro ficam indistinguíveis na tela. O
+agrupamento por estabelecimento continua funcionando: a chave descarta o "2/12" do fim.
 
 **Colunas por nome, não por posição.** Os dois layouts conhecidos (`date,title,amount` e `Data,Valor,Identificador,Descrição`) caem no mesmo parser, e datas ISO ou `dd/mm/aaaa` são aceitas. Formato de data que não seja um desses dois é recusado com erro — data ambígua virando transação errada é pior que import falhado.
 
@@ -275,5 +284,4 @@ casaria com meio extrato.
 
 - **Reconciliação explícita fatura x conta** — linkar as duas pontas do pagamento (`counterpart_transaction_id`); hoje as duas já ficam fora dos totais, falta o link
 - **Metas e Parcelas** — tabelas prontas, sem UI
-- **Adapter do C6** — a porta existe, falta um export real
 - **Lançamento manual** para gasto em dinheiro que não passa por CSV nenhum

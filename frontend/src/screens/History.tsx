@@ -5,6 +5,13 @@ import { date, dateTime } from '../format.js';
 import { NewAccountForm } from '../components/NewAccountForm.js';
 import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 
+/** O nome da conta é livre, então o banco vira explícito no seletor. */
+function rotuloDoBanco(institution: Account['institution']): string {
+  if (institution === 'c6') return 'C6 ·';
+  if (institution === 'nubank') return 'Nubank ·';
+  return '';
+}
+
 export function History({
   accounts,
   onImported,
@@ -123,7 +130,8 @@ export function History({
                 >
                   {accounts.map((account) => (
                     <option key={account.id} value={account.id}>
-                      {account.name} — {account.type === 'credit_card' ? 'fatura' : 'extrato'}
+                      {account.name} — {rotuloDoBanco(account.institution)}{' '}
+                      {account.type === 'credit_card' ? 'fatura' : 'extrato'}
                     </option>
                   ))}
                 </select>

@@ -3,18 +3,17 @@ import type {
   StatementParser,
   StatementParserRegistry,
 } from '../../application/ports/parsers/StatementParser.js';
-import { NubankCheckingParser } from './nubank/NubankCheckingParser.js';
-import { NubankCreditCardParser } from './nubank/NubankCreditCardParser.js';
+import { StatementCsvParser } from './csv/StatementCsvParser.js';
+import { LAYOUTS } from './layouts/index.js';
 
 /**
- * Registro dos adapters de ingestão. O C6 entra aqui como mais uma linha
- * quando houver export real — nenhum caso de uso muda.
+ * Registro dos adapters de ingestão. Um banco novo é uma entrada em
+ * `layouts`, não um arquivo de código novo.
  */
 export class ParserRegistry implements StatementParserRegistry {
-  private readonly parsers: StatementParser[] = [
-    new NubankCheckingParser(),
-    new NubankCreditCardParser(),
-  ];
+  private readonly parsers: StatementParser[] = LAYOUTS.map(
+    (layout) => new StatementCsvParser(layout),
+  );
 
   resolve(institution: Institution, accountType: AccountType): StatementParser | null {
     return (
@@ -24,9 +23,9 @@ export class ParserRegistry implements StatementParserRegistry {
   }
 
   /**
-   * Detecção pelo conteúdo é só um fallback: extrato e fatura do Nubank
-   * têm exatamente o mesmo cabeçalho, e o que separa os dois é o sinal do
-   * valor. Quem decide de verdade é o tipo da conta escolhida no upload.
+   * Detecção pelo conteúdo é fallback: extrato e fatura costumam ter o
+   * mesmo cabeçalho, e o que os separa é a convenção de sinal. Quem
+   * decide de verdade é o tipo da conta escolhida no upload.
    */
   detect(content: string): StatementParser | null {
     return this.parsers.find((parser) => parser.supports(content)) ?? null;

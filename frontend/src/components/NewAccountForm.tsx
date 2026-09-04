@@ -1,6 +1,6 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { api } from '../api/client.js';
-import type { AccountType } from '../api/types.js';
+import type { AccountType, Institution } from '../api/types.js';
 
 /**
  * Criar conta faltava na UI: a API sempre teve o endpoint, mas o único
@@ -11,6 +11,7 @@ export function NewAccountForm({ onCreated }: { onCreated: () => void }): ReactN
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [type, setType] = useState<AccountType>('checking');
+  const [institution, setInstitution] = useState<Institution>('nubank');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,7 +21,7 @@ export function NewAccountForm({ onCreated }: { onCreated: () => void }): ReactN
     setError(null);
 
     try {
-      await api.createAccount({ name: name.trim(), type });
+      await api.createAccount({ name: name.trim(), type, institution });
       setName('');
       setOpen(false);
       onCreated();
@@ -51,6 +52,19 @@ export function NewAccountForm({ onCreated }: { onCreated: () => void }): ReactN
           autoFocus
           required
         />
+      </div>
+
+      <div className="field">
+        <label htmlFor="nova-conta-banco">Banco</label>
+        <select
+          id="nova-conta-banco"
+          value={institution}
+          onChange={(e) => setInstitution(e.target.value as Institution)}
+        >
+          <option value="nubank">Nubank</option>
+          <option value="c6">C6</option>
+          <option value="manual">Outro (só lançamento manual)</option>
+        </select>
       </div>
 
       <div className="field">

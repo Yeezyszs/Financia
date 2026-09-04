@@ -5,7 +5,12 @@ import {
   normalizeDescription,
 } from '../../../src/domain/value-objects/TransactionFingerprint.js';
 
-const base = { accountId: 'acc-1', occurredOn: '2026-08-01', description: 'Padaria São Jorge', amountCents: -850 };
+const base = {
+  accountId: 'acc-1',
+  occurredOn: '2026-08-01',
+  description: 'Padaria São Jorge',
+  amountCents: -850,
+};
 
 describe('fingerprint de transação', () => {
   it('é estável para a mesma linha (reimportar não duplica)', () => {
@@ -20,12 +25,16 @@ describe('fingerprint de transação', () => {
 
   it('muda quando conta, data ou valor mudam', () => {
     expect(buildFingerprint({ ...base, accountId: 'acc-2' })).not.toBe(buildFingerprint(base));
-    expect(buildFingerprint({ ...base, occurredOn: '2026-08-02' })).not.toBe(buildFingerprint(base));
+    expect(buildFingerprint({ ...base, occurredOn: '2026-08-02' })).not.toBe(
+      buildFingerprint(base),
+    );
     expect(buildFingerprint({ ...base, amountCents: -851 })).not.toBe(buildFingerprint(base));
   });
 
   it('distingue compras idênticas no mesmo dia pelo ordinal', () => {
-    expect(buildFingerprint({ ...base, ordinal: 1 })).not.toBe(buildFingerprint({ ...base, ordinal: 0 }));
+    expect(buildFingerprint({ ...base, ordinal: 1 })).not.toBe(
+      buildFingerprint({ ...base, ordinal: 0 }),
+    );
   });
 
   it('atribui ordinais na ordem do arquivo', () => {
