@@ -13,6 +13,8 @@ import { CreateAccountUseCase } from '../application/use-cases/accounts/CreateAc
 import { ListAccountsUseCase } from '../application/use-cases/accounts/ListAccountsUseCase.js';
 import { ListTransactionsUseCase } from '../application/use-cases/transactions/ListTransactionsUseCase.js';
 import { CategorizeTransactionUseCase } from '../application/use-cases/transactions/CategorizeTransactionUseCase.js';
+import { UpdateTransactionUseCase } from '../application/use-cases/transactions/UpdateTransactionUseCase.js';
+import { FlipImportSignsUseCase } from '../application/use-cases/imports/FlipImportSignsUseCase.js';
 import { ImportStatementUseCase } from '../application/use-cases/imports/ImportStatementUseCase.js';
 import { ListImportsUseCase } from '../application/use-cases/imports/ListImportsUseCase.js';
 import { GetOverviewUseCase } from '../application/use-cases/reports/GetOverviewUseCase.js';
@@ -70,14 +72,20 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
     hasher,
   );
   const listImports = new ListImportsUseCase(importRepository);
+  const updateTransaction = new UpdateTransactionUseCase(transactionRepository);
+  const flipImportSigns = new FlipImportSignsUseCase(importRepository, transactionRepository);
   const getOverview = new GetOverviewUseCase(transactionRepository, categoryRepository);
   const listCategories = new ListCategoriesUseCase(categoryRepository);
   const getSnapshot = new GetFinancialSnapshotUseCase(transactionRepository, categoryRepository);
 
   return {
     accounts: new AccountController(createAccount, listAccounts),
-    transactions: new TransactionController(listTransactions, categorizeTransaction),
-    imports: new ImportController(importStatement, listImports),
+    transactions: new TransactionController(
+      listTransactions,
+      categorizeTransaction,
+      updateTransaction,
+    ),
+    imports: new ImportController(importStatement, listImports, flipImportSigns),
     reports: new ReportController(getOverview, listCategories, getSnapshot),
   };
 }

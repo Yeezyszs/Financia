@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import type { ListTransactionsUseCase } from '../../application/use-cases/transactions/ListTransactionsUseCase.js';
 import type { CategorizeTransactionUseCase } from '../../application/use-cases/transactions/CategorizeTransactionUseCase.js';
+import type { UpdateTransactionUseCase } from '../../application/use-cases/transactions/UpdateTransactionUseCase.js';
 import { TransactionPresenter } from '../presenters/TransactionPresenter.js';
 
 const csv = z
@@ -32,11 +33,39 @@ const categorizeSchema = z.object({
   remember: z.boolean().optional(),
 });
 
+const updateSchema = z
+  .object({
+    direction: z.enum(['expense', 'income']).optional(),
+    isTransfer: z.boolean().optional(),
+  })
+  .refine((body) => body.direction !== undefined || body.isTransfer !== undefined, {
+    message: 'Informe direction ou isTransfer',
+  });
+
 export class TransactionController {
   constructor(
     private readonly listTransactions: ListTransactionsUseCase,
     private readonly categorizeTransaction: CategorizeTransactionUseCase,
+    private readonly updateTransaction: UpdateTransactionUseCase,
   ) {}
+
+  update = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const body = updateSchema.parse(req.body);
+      const id = z.string().uuid().parse(req.params.id);
+
+      const transaction = await this.updateTransaction.execute({
+        userId: req.userId,
+        transactionId: id,
+        ...(body.direction ? { direction: body.direction } : {}),
+        ...(body.isTransfer === undefined ? {} : { isTransfer: body.isTransfer }),
+      });
+
+      res.json({ data: TransactionPresenter.toHttp(transaction) });
+    } catch (error) {
+      next(error);
+    }
+  };
 
   categorize = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

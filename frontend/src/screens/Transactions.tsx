@@ -4,6 +4,7 @@ import type { Account, Category, Transaction } from '../api/types.js';
 import { date, money } from '../format.js';
 import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 import { CategoryPicker } from '../components/CategoryPicker.js';
+import { TransactionModal } from '../components/TransactionModal.js';
 
 const PAGE_SIZE = 50;
 
@@ -30,6 +31,9 @@ export function Transactions({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [lembrar, setLembrar] = useState(true);
   const [aviso, setAviso] = useState<string | null>(null);
+  // Guardamos o id, não a transação: assim a caixa aberta acompanha a
+  // linha quando ela é atualizada, em vez de mostrar uma cópia velha.
+  const [editandoId, setEditandoId] = useState<string | null>(null);
 
   // Busca com debounce para não disparar uma request por tecla digitada.
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -146,10 +150,16 @@ export function Transactions({
     [items, lembrar],
   );
 
+  const aplicar = useCallback((atualizada: Transaction) => {
+    setItems((atuais) => atuais.map((item) => (item.id === atualizada.id ? atualizada : item)));
+  }, []);
+
   const accountName = useMemo(
     () => new Map(accounts.map((account) => [account.id, account.name])),
     [accounts],
   );
+
+  const editando = items.find((item) => item.id === editandoId) ?? null;
 
   const lastPage = offset + PAGE_SIZE >= total;
 
@@ -265,7 +275,9 @@ export function Transactions({
             items.map((transaction) => (
               <article className="tx-card" key={transaction.id}>
                 <div className="tx-card-top">
-                  <span className="tx-desc">{transaction.description}</span>
+                  <button className="link tx-desc" onClick={() => setEditandoId(transaction.id)}>
+                    {transaction.description}
+                  </button>
                   <span
                     className={transaction.amountCents > 0 ? 'amount-in num' : 'amount-out num'}
                   >
@@ -324,7 +336,9 @@ export function Transactions({
                   <tr key={transaction.id}>
                     <td style={{ whiteSpace: 'nowrap' }}>{date(transaction.occurredOn)}</td>
                     <td>
-                      {transaction.description}
+                      <button className="link" onClick={() => setEditandoId(transaction.id)}>
+                        {transaction.description}
+                      </button>
                       {transaction.isTransfer ? (
                         <>
                           {' '}
@@ -352,6 +366,17 @@ export function Transactions({
           </table>
         </div>
       )}
+
+      {editando ? (
+        <TransactionModal
+          transaction={editando}
+          categories={categories}
+          accountLabel={accountName.get(editando.accountId) ?? '—'}
+          onCategorize={categorizar}
+          onUpdated={aplicar}
+          onClose={() => setEditandoId(null)}
+        />
+      ) : null}
 
       {total > PAGE_SIZE ? (
         <div className="row" style={{ marginTop: 14, justifyContent: 'space-between' }}>

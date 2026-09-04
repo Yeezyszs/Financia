@@ -38,6 +38,10 @@ export function buildRoutes(route: ControllerResolver): Router {
   );
 
   router.patch(
+    '/transactions/:id',
+    route((c) => c.transactions.update),
+  );
+  router.patch(
     '/transactions/:id/category',
     route((c) => c.transactions.categorize),
   );
@@ -49,6 +53,11 @@ export function buildRoutes(route: ControllerResolver): Router {
   router.post(
     '/imports',
     route((c) => c.imports.create),
+  );
+
+  router.post(
+    '/imports/:id/flip-signs',
+    route((c) => c.imports.flip),
   );
 
   router.get(

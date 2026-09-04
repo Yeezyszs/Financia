@@ -89,9 +89,11 @@ describe('borda HTTP', () => {
       'GET /reports/snapshot',
       'GET /reports/summary',
       'GET /transactions',
+      'PATCH /transactions/:id',
       'PATCH /transactions/:id/category',
       'POST /accounts',
       'POST /imports',
+      'POST /imports/:id/flip-signs',
     ]);
   });
 

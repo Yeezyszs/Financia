@@ -105,6 +105,15 @@ export class InMemoryTransactionRepository implements TransactionRepository {
   async monthlyTotals(): Promise<MonthlyTotal[]> {
     return [];
   }
+  async flipSignsForImport(userId: string, importId: string) {
+    let afetadas = 0;
+    this.transactions = this.transactions.map((t) => {
+      if (t.userId !== userId || t.importId !== importId) return t;
+      afetadas += 1;
+      return t.withDirection(t.amount.cents > 0 ? 'expense' : 'income');
+    });
+    return afetadas;
+  }
   async listRecategorizable(userId: string) {
     return this.transactions
       .filter((t) => t.userId === userId && t.categorizedBy !== 'manual')

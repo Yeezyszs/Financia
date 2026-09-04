@@ -144,6 +144,40 @@ export class SupabaseTransactionRepository implements TransactionRepository {
     );
   }
 
+  /**
+   * Inverte o sinal de uma importação inteira.
+   *
+   * Feito com leitura seguida de upsert em vez de uma função no banco:
+   * `amount_cents = -amount_cents` é um update que se refere à própria
+   * coluna, o que a API REST não expressa. O upsert manda as linhas
+   * completas de volta, então cai no caminho de update e vai numa
+   * requisição só.
+   *
+   * O fingerprint não é recalculado: ele identifica a linha no arquivo de
+   * origem, e mexer nele faria a reimportação do mesmo extrato duplicar
+   * tudo que foi corrigido aqui.
+   */
+  async flipSignsForImport(userId: string, importId: string): Promise<number> {
+    const { data, error } = await this.db
+      .from(TABLE)
+      .select('*')
+      .eq('user_id', userId)
+      .eq('import_id', importId);
+    if (error) throw error;
+
+    const rows = data as TransactionRow[];
+    if (rows.length === 0) return 0;
+
+    const invertidas = rows.map((row) => ({ ...row, amount_cents: -Number(row.amount_cents) }));
+
+    const { error: upsertError } = await this.db
+      .from(TABLE)
+      .upsert(invertidas, { onConflict: 'id' });
+    if (upsertError) throw upsertError;
+
+    return rows.length;
+  }
+
   async setCategoryForMany(
     userId: string,
     ids: string[],

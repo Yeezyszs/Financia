@@ -148,6 +148,29 @@ export class Transaction {
     });
   }
 
+  /**
+   * Força a transação a ser saída ou entrada, invertendo o valor se
+   * necessário.
+   *
+   * O fingerprint NÃO é recalculado de propósito. Ele é a identidade da
+   * linha no arquivo de origem; recalcular faria a reimportação do mesmo
+   * extrato deixar de reconhecer esta linha e criar uma duplicata. A
+   * correção é sobre como o valor é interpretado, não sobre qual linha
+   * ele é.
+   */
+  withDirection(direction: 'expense' | 'income'): Transaction {
+    const desejado = direction === 'expense' ? -Math.abs(this.props.amount.cents) : Math.abs(this.props.amount.cents);
+    if (desejado === this.props.amount.cents) return this;
+
+    return new Transaction({ ...this.props, amount: Money.fromCents(desejado) });
+  }
+
+  /** Entra ou sai do somatório sem mexer na categoria. */
+  withTransferFlag(isTransfer: boolean): Transaction {
+    if (isTransfer === this.props.isTransfer) return this;
+    return isTransfer ? this.markAsTransfer() : this.asRegularEntry();
+  }
+
   /** Remove a categoria — volta a contar como não categorizada. */
   uncategorize(): Transaction {
     return new Transaction({

@@ -66,6 +66,13 @@ export interface TransactionRepository {
     userId: string,
   ): Promise<{ id: string; description: string; categoryId: string | null }[]>;
 
+  /**
+   * Inverte o sinal de todas as transações de uma importação. O
+   * fingerprint fica intacto: ele identifica a linha no arquivo, e
+   * recalcular faria a reimportação duplicar tudo.
+   */
+  flipSignsForImport(userId: string, importId: string): Promise<number>;
+
   /** Aplica uma categoria a várias transações de uma vez. */
   setCategoryForMany(
     userId: string,

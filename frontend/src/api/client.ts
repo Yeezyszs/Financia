@@ -114,6 +114,20 @@ export const api = {
     institution?: Account['institution'];
   }) => request<Account>('/accounts', { method: 'POST', body: JSON.stringify(body) }),
 
+  /**
+   * Corrige o tipo de uma transação. `direction` mexe apenas no sinal do
+   * valor; o fingerprint continua o mesmo de propósito, para que uma
+   * reimportação do mesmo arquivo continue sendo reconhecida como repetida.
+   */
+  updateTransaction: (
+    id: string,
+    body: { direction?: 'expense' | 'income'; isTransfer?: boolean },
+  ) =>
+    request<Transaction>(`/transactions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+
   categorizeTransaction: (id: string, body: { categoryId: string | null; remember?: boolean }) =>
     request<{
       transaction: Transaction;
@@ -147,4 +161,8 @@ export const api = {
 
   createImport: (body: { accountId: string; filename: string; content: string; force?: boolean }) =>
     request<ImportResult>('/imports', { method: 'POST', body: JSON.stringify(body) }),
+
+  /** Inverte o sinal de uma importação inteira que entrou trocada. */
+  flipImportSigns: (id: string) =>
+    request<{ affected: number }>(`/imports/${id}/flip-signs`, { method: 'POST' }),
 };

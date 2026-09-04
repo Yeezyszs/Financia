@@ -13,11 +13,13 @@ export function CategoryPicker({
   categories,
   onChange,
   disabled,
+  id,
 }: {
   value: string | null;
   categories: Category[];
   onChange: (categoryId: string | null) => void | Promise<void>;
   disabled?: boolean;
+  id?: string;
 }): ReactNode {
   const [salvando, setSalvando] = useState(false);
 
@@ -32,6 +34,7 @@ export function CategoryPicker({
 
   return (
     <select
+      {...(id ? { id } : {})}
       className={value ? 'category-picker' : 'category-picker sem-categoria'}
       value={value ?? ''}
       disabled={disabled || salvando}
