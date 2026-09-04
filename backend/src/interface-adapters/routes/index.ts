@@ -3,12 +3,14 @@ import type { AccountController } from '../controllers/AccountController.js';
 import type { TransactionController } from '../controllers/TransactionController.js';
 import type { ImportController } from '../controllers/ImportController.js';
 import type { ReportController } from '../controllers/ReportController.js';
+import type { CategoryController } from '../controllers/CategoryController.js';
 
 export interface Controllers {
   accounts: AccountController;
   transactions: TransactionController;
   imports: ImportController;
   reports: ReportController;
+  categories: CategoryController;
 }
 
 /**
@@ -66,7 +68,11 @@ export function buildRoutes(route: ControllerResolver): Router {
 
   router.get(
     '/categories',
-    route((c) => c.reports.categories),
+    route((c) => c.categories.list),
+  );
+  router.post(
+    '/categories',
+    route((c) => c.categories.create),
   );
   router.get(
     '/reports/overview',

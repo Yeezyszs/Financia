@@ -34,6 +34,9 @@ export function Transactions({
   // Guardamos o id, não a transação: assim a caixa aberta acompanha a
   // linha quando ela é atualizada, em vez de mostrar uma cópia velha.
   const [editandoId, setEditandoId] = useState<string | null>(null);
+  // Categorias criadas aqui dentro. Esperar a lista do App recarregar
+  // deixaria o seletor sem a opção que acabou de ser escolhida.
+  const [novasCategorias, setNovasCategorias] = useState<Category[]>([]);
 
   // Busca com debounce para não disparar uma request por tecla digitada.
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -154,6 +157,25 @@ export function Transactions({
     setItems((atuais) => atuais.map((item) => (item.id === atualizada.id ? atualizada : item)));
   }, []);
 
+  const criarCategoria = useCallback(async (name: string, kind: Category['kind']) => {
+    const { category } = await api.createCategory({ name, kind });
+
+    // Lê o id aqui, e não lá dentro do updater: uma resposta fora do
+    // formato esperado tem que virar mensagem de erro na caixa, não uma
+    // exceção durante o render que derruba a tela inteira.
+    const id = category.id;
+    setNovasCategorias((atuais) =>
+      atuais.some((c) => c.id === id) ? atuais : [...atuais, category],
+    );
+    return category;
+  }, []);
+
+  const categoriasDisponiveis = useMemo(() => {
+    const porId = new Map(categories.map((c) => [c.id, c]));
+    for (const nova of novasCategorias) if (!porId.has(nova.id)) porId.set(nova.id, nova);
+    return [...porId.values()].sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  }, [categories, novasCategorias]);
+
   const accountName = useMemo(
     () => new Map(accounts.map((account) => [account.id, account.name])),
     [accounts],
@@ -204,7 +226,7 @@ export function Transactions({
           <label htmlFor="categoria">Categoria</label>
           <select id="categoria" value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
             <option value="">Todas</option>
-            {categories.map((category) => (
+            {categoriasDisponiveis.map((category) => (
               <option key={category.id} value={category.id}>
                 {category.name}
               </option>
@@ -291,10 +313,15 @@ export function Transactions({
                   <span aria-hidden="true">·</span>
                   <CategoryPicker
                     value={transaction.categoryId}
-                    categories={categories}
+                    categories={categoriasDisponiveis}
                     onChange={(categoryId) => categorizar(transaction.id, categoryId)}
                   />
                   {transaction.isTransfer ? <span className="tag">transferência</span> : null}
+                  {transaction.notes ? (
+                    <span className="tag tag-nota" title={transaction.notes}>
+                      nota
+                    </span>
+                  ) : null}
                 </div>
               </article>
             ))
@@ -345,12 +372,20 @@ export function Transactions({
                           <span className="tag">transferência</span>
                         </>
                       ) : null}
+                      {transaction.notes ? (
+                        <>
+                          {' '}
+                          <span className="tag tag-nota" title={transaction.notes}>
+                            nota
+                          </span>
+                        </>
+                      ) : null}
                     </td>
                     <td>{accountName.get(transaction.accountId) ?? '—'}</td>
                     <td>
                       <CategoryPicker
                         value={transaction.categoryId}
-                        categories={categories}
+                        categories={categoriasDisponiveis}
                         onChange={(categoryId) => categorizar(transaction.id, categoryId)}
                       />
                     </td>
@@ -370,9 +405,10 @@ export function Transactions({
       {editando ? (
         <TransactionModal
           transaction={editando}
-          categories={categories}
+          categories={categoriasDisponiveis}
           accountLabel={accountName.get(editando.accountId) ?? '—'}
           onCategorize={categorizar}
+          onCreateCategory={criarCategoria}
           onUpdated={aplicar}
           onClose={() => setEditandoId(null)}
         />

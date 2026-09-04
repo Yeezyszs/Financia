@@ -103,6 +103,34 @@ describe('UpdateTransactionUseCase', () => {
     expect(dentro.countsAsExpense).toBe(true);
   });
 
+  it('guarda e apaga a observação', async () => {
+    const repo = new InMemoryTransactionRepository([tx('t1', -2499)]);
+    const useCase = new UpdateTransactionUseCase(repo);
+
+    const anotada = await useCase.execute({
+      userId: USER_ID,
+      transactionId: 't1',
+      notes: '  assinatura do iCloud  ',
+    });
+    expect(anotada.notes).toBe('assinatura do iCloud');
+
+    const limpa = await useCase.execute({ userId: USER_ID, transactionId: 't1', notes: null });
+    expect(limpa.notes).toBeNull();
+  });
+
+  it('observação em branco vira nulo, não anotação vazia', async () => {
+    const repo = new InMemoryTransactionRepository([tx('t1', -2499)]);
+    const useCase = new UpdateTransactionUseCase(repo);
+
+    const atualizada = await useCase.execute({
+      userId: USER_ID,
+      transactionId: 't1',
+      notes: '   ',
+    });
+
+    expect(atualizada.notes).toBeNull();
+  });
+
   it('recusa transação inexistente', async () => {
     const useCase = new UpdateTransactionUseCase(new InMemoryTransactionRepository([]));
 

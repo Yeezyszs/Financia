@@ -37,10 +37,13 @@ const updateSchema = z
   .object({
     direction: z.enum(['expense', 'income']).optional(),
     isTransfer: z.boolean().optional(),
+    notes: z.string().max(500).nullable().optional(),
   })
-  .refine((body) => body.direction !== undefined || body.isTransfer !== undefined, {
-    message: 'Informe direction ou isTransfer',
-  });
+  .refine(
+    (body) =>
+      body.direction !== undefined || body.isTransfer !== undefined || body.notes !== undefined,
+    { message: 'Informe direction, isTransfer ou notes' },
+  );
 
 export class TransactionController {
   constructor(
@@ -59,6 +62,7 @@ export class TransactionController {
         transactionId: id,
         ...(body.direction ? { direction: body.direction } : {}),
         ...(body.isTransfer === undefined ? {} : { isTransfer: body.isTransfer }),
+        ...(body.notes === undefined ? {} : { notes: body.notes }),
       });
 
       res.json({ data: TransactionPresenter.toHttp(transaction) });

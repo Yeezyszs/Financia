@@ -19,6 +19,7 @@ export function TransactionModal({
   categories,
   accountLabel,
   onCategorize,
+  onCreateCategory,
   onUpdated,
   onClose,
 }: {
@@ -26,6 +27,8 @@ export function TransactionModal({
   categories: Category[];
   accountLabel: string;
   onCategorize: (transactionId: string, categoryId: string | null) => Promise<void>;
+  /** Cria a categoria pelo nome digitado e devolve a que passou a valer. */
+  onCreateCategory: (name: string, kind: Category['kind']) => Promise<Category>;
   onUpdated: (transaction: Transaction) => void;
   onClose: () => void;
 }): ReactNode {
@@ -39,6 +42,18 @@ export function TransactionModal({
     isTransfer?: boolean;
   }>({});
 
+  const [criando, setCriando] = useState(false);
+  const [nomeNovo, setNomeNovo] = useState('');
+  const [notas, setNotas] = useState(transaction.notes ?? '');
+  const [estadoNotas, setEstadoNotas] = useState<'parado' | 'salvando' | 'salvo'>('parado');
+
+  // O que já está no servidor. A observação é salva ao sair do campo, e
+  // sem esta referência um Esc logo depois de digitar salvaria de novo o
+  // mesmo texto — ou, pior, perderia o texto ainda não salvo.
+  const salvo = useRef(transaction.notes ?? '');
+  const atual = useRef(notas);
+  atual.current = notas;
+
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog || dialog.open) return;
@@ -48,6 +63,50 @@ export function TransactionModal({
   const direcao: 'expense' | 'income' =
     otimista.direction ?? (transaction.amountCents > 0 ? 'income' : 'expense');
   const naoContar = otimista.isTransfer ?? transaction.isTransfer;
+
+  async function salvarNotas(): Promise<void> {
+    const texto = atual.current.trim();
+    if (texto === salvo.current) return;
+
+    setEstadoNotas('salvando');
+    try {
+      const atualizada = await api.updateTransaction(transaction.id, {
+        notes: texto === '' ? null : texto,
+      });
+      salvo.current = atualizada.notes ?? '';
+      onUpdated(atualizada);
+      setEstadoNotas('salvo');
+    } catch (err) {
+      setEstadoNotas('parado');
+      setErro(err instanceof Error ? err.message : 'Não consegui salvar a observação.');
+    }
+  }
+
+  // Fechar com Esc não passa por blur em todo navegador: sem esta rede,
+  // o que foi digitado por último sumiria sem aviso.
+  useEffect(() => {
+    return () => {
+      void salvarNotas();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function criarCategoria(): Promise<void> {
+    const nome = nomeNovo.trim();
+    if (!nome) return;
+
+    setCriando(true);
+    setErro(null);
+    try {
+      const categoria = await onCreateCategory(nome, direcao === 'income' ? 'income' : 'expense');
+      setNomeNovo('');
+      await onCategorize(transaction.id, categoria.id);
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Não consegui criar a categoria.');
+    } finally {
+      setCriando(false);
+    }
+  }
 
   async function salvar(body: {
     direction?: 'expense' | 'income';
@@ -117,6 +176,49 @@ export function TransactionModal({
             value={transaction.categoryId}
             categories={categories}
             onChange={(categoryId) => onCategorize(transaction.id, categoryId)}
+          />
+          <div className="nova-categoria">
+            <input
+              type="text"
+              value={nomeNovo}
+              maxLength={40}
+              placeholder="ou escreva uma categoria nova"
+              aria-label="Nome da categoria nova"
+              onChange={(e) => setNomeNovo(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void criarCategoria();
+                }
+              }}
+            />
+            <button
+              className="ghost"
+              disabled={criando || !nomeNovo.trim()}
+              onClick={() => void criarCategoria()}
+            >
+              Usar
+            </button>
+          </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="modal-notas">
+            Observações
+            {estadoNotas === 'salvando' ? <small> salvando…</small> : null}
+            {estadoNotas === 'salvo' ? <small> salvo</small> : null}
+          </label>
+          <textarea
+            id="modal-notas"
+            rows={3}
+            maxLength={500}
+            placeholder="O que foi essa compra, com quem dividiu, o que conferir depois..."
+            value={notas}
+            onChange={(e) => {
+              setNotas(e.target.value);
+              setEstadoNotas('parado');
+            }}
+            onBlur={() => void salvarNotas()}
           />
         </div>
 

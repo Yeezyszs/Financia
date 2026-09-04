@@ -169,6 +169,17 @@ export class Transaction {
   }
 
   /** Entra ou sai do somatório sem mexer na categoria. */
+  /**
+   * Observação livre. Espaço em branco vira nulo: um campo "preenchido"
+   * com espaços aparece como anotação existente em toda listagem.
+   */
+  withNotes(notes: string | null): Transaction {
+    const limpo = notes?.trim() ? notes.trim() : null;
+    if (limpo === this.props.notes) return this;
+
+    return new Transaction({ ...this.props, notes: limpo });
+  }
+
   withTransferFlag(isTransfer: boolean): Transaction {
     if (isTransfer === this.props.isTransfer) return this;
     return isTransfer ? this.markAsTransfer() : this.asRegularEntry();

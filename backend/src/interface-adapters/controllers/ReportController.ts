@@ -1,9 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import type { GetOverviewUseCase } from '../../application/use-cases/reports/GetOverviewUseCase.js';
-import type { ListCategoriesUseCase } from '../../application/use-cases/categories/ListCategoriesUseCase.js';
 import type { GetFinancialSnapshotUseCase } from '../../application/use-cases/insights/GetFinancialSnapshotUseCase.js';
-import { CategoryPresenter } from '../presenters/CategoryPresenter.js';
 import { snapshotToMarkdown } from '../presenters/SnapshotMarkdownPresenter.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -42,7 +40,6 @@ const snapshotSchema = z.object({
 export class ReportController {
   constructor(
     private readonly getOverview: GetOverviewUseCase,
-    private readonly listCategories: ListCategoriesUseCase,
     private readonly getSnapshot: GetFinancialSnapshotUseCase,
   ) {}
 
@@ -92,15 +89,6 @@ export class ReportController {
       });
 
       res.type('text/markdown; charset=utf-8').send(snapshotToMarkdown(snapshot));
-    } catch (error) {
-      next(error);
-    }
-  };
-
-  categories = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const categories = await this.listCategories.execute({ userId: req.userId });
-      res.json({ data: categories.map(CategoryPresenter.toHttp) });
     } catch (error) {
       next(error);
     }

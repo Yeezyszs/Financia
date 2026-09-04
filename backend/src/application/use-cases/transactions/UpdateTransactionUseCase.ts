@@ -11,6 +11,8 @@ export interface UpdateTransactionInput {
   direction?: TransactionDirection;
   /** Fora do somatório de receitas e despesas. */
   isTransfer?: boolean;
+  /** Observação livre; `null` apaga a que existia. */
+  notes?: string | null;
 }
 
 /**
@@ -30,6 +32,7 @@ export class UpdateTransactionUseCase {
     let atualizada = transaction;
     if (input.direction) atualizada = atualizada.withDirection(input.direction);
     if (input.isTransfer !== undefined) atualizada = atualizada.withTransferFlag(input.isTransfer);
+    if (input.notes !== undefined) atualizada = atualizada.withNotes(input.notes);
 
     if (atualizada === transaction) return transaction;
 

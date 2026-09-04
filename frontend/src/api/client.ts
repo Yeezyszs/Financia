@@ -102,6 +102,16 @@ export const api = {
   accounts: () => request<Account[]>('/accounts'),
   categories: () => request<Category[]>('/categories'),
 
+  /**
+   * Cria a categoria pelo nome digitado. Nome que já existe devolve a
+   * categoria antiga com `created: false` — não é erro.
+   */
+  createCategory: (body: { name: string; kind?: Category['kind'] }) =>
+    request<{ category: Category; created: boolean }>('/categories', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
   overview: (query: { from?: string; to?: string; year?: number; accountIds?: string[] } = {}) =>
     request<Overview>(`/reports/overview${toQueryString(query)}`),
 
@@ -121,7 +131,7 @@ export const api = {
    */
   updateTransaction: (
     id: string,
-    body: { direction?: 'expense' | 'income'; isTransfer?: boolean },
+    body: { direction?: 'expense' | 'income'; isTransfer?: boolean; notes?: string | null },
   ) =>
     request<Transaction>(`/transactions/${id}`, {
       method: 'PATCH',

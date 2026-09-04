@@ -411,7 +411,8 @@ tr:last-child td {
 }
 
 input,
-select {
+select,
+textarea {
   font: inherit;
   font-size: 14px;
   padding: 7px 9px;
@@ -424,6 +425,7 @@ select {
 
 input:focus-visible,
 select:focus-visible,
+textarea:focus-visible,
 button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
@@ -997,6 +999,14 @@ dialog.modal {
 dialog.modal[open] {
   display: flex;
   flex-direction: column;
+  /* Cabeçalho e rodapé ficam parados e só o miolo rola: com o teclado do
+     celular aberto a caixa encolhe, e sem isso o botão de fechar seria o
+     primeiro a sair da tela. */
+  max-height: min(90dvh, calc(100% - 2em));
+}
+
+.modal-body {
+  overflow-y: auto;
 }
 
 dialog.modal::backdrop {
@@ -1128,4 +1138,36 @@ dialog.modal::backdrop {
 button.ghost.perigo {
   border-color: var(--danger);
   color: var(--danger);
+}
+
+/* Categoria nova escrita na hora: o seletor cobre o que já existe, este
+   campo cobre o que ainda não. Ficam juntos porque são a mesma decisão. */
+.nova-categoria {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.nova-categoria input {
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-body textarea {
+  width: 100%;
+  min-width: 0;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.modal-body .field label small {
+  margin-left: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Marca a transação que tem observação: sem isso a anotação só existe
+   para quem lembra de abrir aquela linha. */
+.tag-nota {
+  cursor: help;
 }

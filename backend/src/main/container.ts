@@ -20,11 +20,13 @@ import { ImportStatementUseCase } from '../application/use-cases/imports/ImportS
 import { ListImportsUseCase } from '../application/use-cases/imports/ListImportsUseCase.js';
 import { GetOverviewUseCase } from '../application/use-cases/reports/GetOverviewUseCase.js';
 import { ListCategoriesUseCase } from '../application/use-cases/categories/ListCategoriesUseCase.js';
+import { CreateCategoryUseCase } from '../application/use-cases/categories/CreateCategoryUseCase.js';
 import { GetFinancialSnapshotUseCase } from '../application/use-cases/insights/GetFinancialSnapshotUseCase.js';
 import { AccountController } from '../interface-adapters/controllers/AccountController.js';
 import { TransactionController } from '../interface-adapters/controllers/TransactionController.js';
 import { ImportController } from '../interface-adapters/controllers/ImportController.js';
 import { ReportController } from '../interface-adapters/controllers/ReportController.js';
+import { CategoryController } from '../interface-adapters/controllers/CategoryController.js';
 import type { Controllers } from '../interface-adapters/routes/index.js';
 
 /**
@@ -78,6 +80,7 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
   const deleteImport = new DeleteImportUseCase(importRepository, transactionRepository);
   const getOverview = new GetOverviewUseCase(transactionRepository, categoryRepository);
   const listCategories = new ListCategoriesUseCase(categoryRepository);
+  const createCategory = new CreateCategoryUseCase(categoryRepository, ids);
   const getSnapshot = new GetFinancialSnapshotUseCase(transactionRepository, categoryRepository);
 
   return {
@@ -88,6 +91,7 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
       updateTransaction,
     ),
     imports: new ImportController(importStatement, listImports, flipImportSigns, deleteImport),
-    reports: new ReportController(getOverview, listCategories, getSnapshot),
+    reports: new ReportController(getOverview, getSnapshot),
+    categories: new CategoryController(listCategories, createCategory),
   };
 }
