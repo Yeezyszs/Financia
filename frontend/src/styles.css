@@ -7,10 +7,11 @@
      Sora carrega números e títulos, Inter o resto — display pesado num
      corpo neutro é o que dá o ar de produto financeiro.
 
-   - O fundo é azul-claro, escolha do Pedro. Os dois tons vizinhos
-     (`--surface-2` e `--surface-3`) acompanham o mesmo matiz: eles
-     nasceram esverdeados junto com o fundo antigo, e sobre azul um
-     cinza-quente denuncia que a troca foi parcial.
+   - O fundo é azul, escolha do Pedro. Os tons vizinhos acompanham o
+     mesmo matiz nos dois temas: eles nasceram esverdeados junto com o
+     fundo antigo, e um cinza-quente sobre azul denuncia que a troca foi
+     parcial. No escuro o azul é o mesmo matiz em luminosidade baixa —
+     `#f0f8fe` é claro por natureza e não tem tradução literal lá.
 
    - Receita em verde e despesa em vermelho, como no original. Testei o
      par sob deuteranopia (4,1x de contraste) e protanopia (3,0x): eles
@@ -76,18 +77,18 @@
   :root:not([data-theme='light']) {
     color-scheme: dark;
 
-    --bg: #0a1512;
-    --surface: #11201a;
-    --surface-2: #16291f;
-    --surface-3: #1d3327;
+    --bg: #0a141c;
+    --surface: #101d26;
+    --surface-2: #15242e;
+    --surface-3: #1c2f3b;
 
     --border: rgb(255 255 255 / 0.09);
     --border-2: rgb(255 255 255 / 0.05);
     --border-strong: rgb(255 255 255 / 0.2);
 
-    --text: #e9f1ea;
-    --text-2: #a8c2b0;
-    --text-3: #7d9a87;
+    --text: #e9f0f7;
+    --text-2: #a7bccd;
+    --text-3: #7c94a7;
 
     --nav-bg: #04231f;
 
