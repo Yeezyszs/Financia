@@ -82,15 +82,20 @@ insert into users (id, email, name) values ('<auth-user-id>', '<email>', 'Pedro'
 select seed_user_defaults('<auth-user-id>');
 ```
 
-## Rodando o backend
+## Rodando localmente
+
+O `frontend/index.html` **não abre direto no navegador** (Live Server, `file://`
+ou qualquer servidor estático). Ele carrega `/src/main.tsx`, que o navegador não
+sabe executar — TypeScript e JSX precisam ser compilados. Abrir assim dá página
+em branco, sem erro visível. Quem compila é o Vite, e é ele que serve a página.
 
 ```bash
 cp backend/.env.example backend/.env     # SUPABASE_URL, SUPABASE_ANON_KEY
 cp frontend/.env.example frontend/.env   # VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
 npm install                            # workspaces: instala backend e frontend
 
-npm run dev:api    # API em http://localhost:3333
-npm run dev        # UI em http://localhost:5173 (proxy /api -> 3333)
+npm run dev:api    # API em http://localhost:3333 (num terminal)
+npm run dev        # UI em http://localhost:5173 (noutro; proxy /api -> 3333)
 
 npm test           # testes do backend
 npm run typecheck  # backend + frontend
