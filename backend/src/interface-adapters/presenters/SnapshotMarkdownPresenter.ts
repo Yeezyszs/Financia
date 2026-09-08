@@ -91,6 +91,8 @@ export function snapshotToMarkdown(snapshot: FinancialSnapshot): string {
     `- Período: ${janela} (${snapshot.transactionCount} transações).`,
     '- Transferências entre minhas próprias contas (como o pagamento da fatura do cartão) já',
     '  estão excluídas — elas não são despesa, apenas dinheiro mudando de lugar.',
+    '- Aportes em investimento também estão fora da despesa: o dinheiro saiu da conta, mas',
+    '  virou patrimônio em vez de consumo. Eles aparecem em linha própria.',
     '- "Assinatura" é gasto recorrente de valor estável, que eu poderia cancelar por inteiro.',
     '  "Recorrente variável" é hábito com valor que muda (mercado, delivery) — dá para reduzir,',
     '  não para zerar.',
@@ -116,7 +118,11 @@ export function snapshotToMarkdown(snapshot: FinancialSnapshot): string {
     `## Média dos últimos ${snapshot.monthlySeries.length} meses`,
     '',
     `- Receita média: ${reais(snapshot.income.monthlyAverageCents)}`,
-    `- Despesa média: ${reais(despesaMedia)}`,
+    `- Despesa média (só consumo): ${reais(despesaMedia)}`,
+    `- Aporte médio em investimento: ${reais(snapshot.saving.monthlyAverageCents)} por mês`,
+    ...(snapshot.savingRatePercent === null
+      ? []
+      : [`- Taxa de poupança: ${snapshot.savingRatePercent}% da renda não virou consumo`]),
     `- Gasto fixo (assinaturas ativas): ${reais(snapshot.fixedMonthlyCents)} por mês` +
       ` — ${percentual(snapshot.fixedMonthlyCents, despesaMedia)}% da despesa`,
     `- Gasto variável: ${reais(snapshot.variableMonthlyCents)} por mês`,

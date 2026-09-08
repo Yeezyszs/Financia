@@ -88,27 +88,28 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
 
   const balancePositive = (data?.balanceCents ?? 0) >= 0;
 
-  // Quanto da renda sobrou. É o número que muda comportamento — "sobrou
-  // R$ 4 mil" não diz se foi um mês bom sem a renda ao lado.
-  const receita = data?.incomeCents ?? 0;
-  const taxaPoupanca = receita > 0 ? Math.round(((data?.balanceCents ?? 0) / receita) * 100) : null;
+  // Quanto da renda não virou consumo. Vem pronto do servidor porque a
+  // conta depende de o que é aporte e o que é gasto — que é justamente a
+  // distinção que esta versão passou a fazer.
+  const taxaPoupanca = data?.savingRatePercent ?? null;
 
   const doMes = monthRange(year, month);
   const daJanela = { from: monthsBefore(year, month, janela - 1), to: doMes.to };
 
   /** Recorte do mês: cards de topo e despesas por categoria. */
-  const drillDoMes = (parcial: Omit<Drill, 'from' | 'to'>) => onDrill({ ...parcial, ...doMes });
+  const drillDoMes = (parcial: Omit<Drill, 'from' | 'to' | 'origem'>) =>
+    onDrill({ ...parcial, ...doMes, origem: 'Visão geral' });
 
   /** Recorte da janela de análise: recorrentes e variações. */
-  const drillDaJanela = (parcial: Omit<Drill, 'from' | 'to'>) =>
-    onDrill({ ...parcial, ...daJanela });
+  const drillDaJanela = (parcial: Omit<Drill, 'from' | 'to' | 'origem'>) =>
+    onDrill({ ...parcial, ...daJanela, origem: 'Visão geral' });
 
   return (
     <>
       <h1 className="page-title">Visão geral</h1>
       <p className="page-subtitle">
-        Receitas, despesas e saldo do período. Transferências entre suas contas — como o pagamento
-        da fatura — ficam de fora dos totais.
+        Transferências entre suas contas — como o pagamento da fatura — ficam de fora dos totais. E
+        aporte em investimento não é despesa: sai da conta, mas vira patrimônio.
       </p>
 
       {/* Só o mês fica aqui em cima, porque é o único controle que
@@ -165,10 +166,23 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
               money(data?.expenseCents ?? 0)
             )}
           </div>
+          <p className="kpi-hint">Só consumo — aporte não entra aqui</p>
         </div>
 
         <div className="card">
-          <p className="kpi-label">Saldo do mês</p>
+          <p className="kpi-label">Guardado</p>
+          <div className="kpi-value">
+            {loading ? (
+              <span className="skeleton" style={{ display: 'block', width: 120 }} />
+            ) : (
+              money(data?.savingCents ?? 0)
+            )}
+          </div>
+          <p className="kpi-hint">Aporte em investimento, líquido de resgates</p>
+        </div>
+
+        <div className="card">
+          <p className="kpi-label">Sobrou na conta</p>
           <div
             className="kpi-value"
             style={{ color: balancePositive ? undefined : 'var(--danger)' }}
@@ -184,7 +198,7 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
               ? balancePositive
                 ? 'Receitas maiores que despesas'
                 : 'Despesas maiores que receitas'
-              : `${taxaPoupanca}% da renda do mês`}
+              : `Guardou ${taxaPoupanca}% da renda, contando o aporte`}
           </p>
         </div>
       </div>

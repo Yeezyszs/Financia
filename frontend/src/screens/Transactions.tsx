@@ -262,7 +262,7 @@ export function Transactions({
       {drill ? (
         <div className="drill-chip">
           <span>
-            Vindo da Visão geral: <b>{drill.rotulo}</b>
+            Vindo de {drill.origem}: <b>{drill.rotulo}</b>
           </span>
           <button
             className="link acao"

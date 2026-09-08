@@ -1,6 +1,6 @@
 export type AccountType = 'checking' | 'credit_card';
 export type Institution = 'nubank' | 'c6' | 'manual';
-export type CategoryKind = 'income' | 'expense' | 'transfer';
+export type CategoryKind = 'income' | 'expense' | 'transfer' | 'saving';
 
 export interface Account {
   id: string;
@@ -55,6 +55,7 @@ export interface MonthlyTotal {
   month: string;
   incomeCents: number;
   expenseCents: number;
+  savingCents: number;
 }
 
 export interface CategoryBreakdown {
@@ -68,10 +69,21 @@ export interface CategoryBreakdown {
 export interface Overview {
   period: { from: string; to: string };
   incomeCents: number;
+  /** Só consumo — aporte vem em `savingCents`. */
   expenseCents: number;
+  savingCents: number;
   balanceCents: number;
+  /** Fatia da renda que não virou consumo. `null` sem receita. */
+  savingRatePercent: number | null;
   expensesByCategory: CategoryBreakdown[];
   monthly: MonthlyTotal[];
+}
+
+export interface SinalSuspeito {
+  occurredOn: string;
+  description: string;
+  amountCents: number;
+  esperado: 'entrada' | 'saida';
 }
 
 export interface ImportResult {
@@ -82,6 +94,7 @@ export interface ImportResult {
   categorized: number;
   periodStart: string | null;
   periodEnd: string | null;
+  suspectSigns: SinalSuspeito[];
 }
 
 /**
@@ -92,6 +105,8 @@ export interface ImportResult {
  */
 export interface Drill {
   rotulo: string;
+  /** Tela que pediu o recorte, para a de destino dizer de onde veio. */
+  origem: string;
   categoryIds?: string[];
   from?: string;
   to?: string;
@@ -139,6 +154,8 @@ export interface Snapshot {
   months: number;
   income: { totalCents: number; monthlyAverageCents: number };
   expense: { totalCents: number; monthlyAverageCents: number };
+  saving: { totalCents: number; monthlyAverageCents: number };
+  savingRatePercent: number | null;
   fixedMonthlyCents: number;
   variableMonthlyCents: number;
   subscriptions: RecurringItem[];

@@ -18,7 +18,7 @@ export function CategoryChart({
 }: {
   data: CategoryBreakdown[];
   /** Abre as transações por trás da barra. A cauda "Outras" não abre. */
-  onDrill?: (drill: Omit<Drill, 'from' | 'to'>) => void;
+  onDrill?: (drill: Omit<Drill, 'from' | 'to' | 'origem'>) => void;
 }): ReactNode {
   if (data.length === 0) {
     return <div className="empty">Nenhuma despesa no período.</div>;

@@ -16,7 +16,7 @@ export function RecurringCard({
 }: {
   snapshot: Snapshot;
   /** Abre as compras do estabelecimento dentro da janela analisada. */
-  onDrill?: (drill: Omit<Drill, 'from' | 'to'>) => void;
+  onDrill?: (drill: Omit<Drill, 'from' | 'to' | 'origem'>) => void;
 }): ReactNode {
   const { subscriptions, recurring, fixedMonthlyCents, variableMonthlyCents } = snapshot;
 

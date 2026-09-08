@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { ApiError, api } from '../api/client.js';
-import type { Account, ImportRecord, ImportResult } from '../api/types.js';
+import type { Account, Drill, ImportRecord, ImportResult } from '../api/types.js';
 import { date, dateTime } from '../format.js';
 import { NewAccountForm } from '../components/NewAccountForm.js';
 import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
@@ -18,10 +18,13 @@ export function History({
   accounts,
   onImported,
   onAccountsChanged,
+  onDrill,
 }: {
   accounts: Account[];
   onImported: () => void;
   onAccountsChanged: () => void;
+  /** Abre uma linha suspeita direto nas Transações, para conferir. */
+  onDrill: (drill: Drill) => void;
 }): ReactNode {
   const [records, setRecords] = useState<ImportRecord[]>([]);
   const [accountId, setAccountId] = useState('');
@@ -304,6 +307,41 @@ export function History({
                     </button>
                   </div>
                 ) : null}
+              </div>
+            ) : null}
+
+            {result && result.suspectSigns.length > 0 ? (
+              <div className="notice aviso">
+                <b>
+                  {result.suspectSigns.length}{' '}
+                  {result.suspectSigns.length === 1 ? 'linha entrou' : 'linhas entraram'} com o
+                  sinal em dúvida.
+                </b>{' '}
+                A descrição diz uma coisa e o valor diz outra — provavelmente uma saída gravada como
+                entrada. Confira cada uma:
+                <ul className="lista-suspeitos">
+                  {result.suspectSigns.map((suspeito) => (
+                    <li key={`${suspeito.occurredOn}-${suspeito.description}`}>
+                      <button
+                        className="link acao"
+                        onClick={() =>
+                          onDrill({
+                            rotulo: 'Sinal em dúvida',
+                            origem: 'Histórico',
+                            search: suspeito.description,
+                          })
+                        }
+                      >
+                        {suspeito.description}
+                      </button>{' '}
+                      <span className="rec-meta">
+                        {date(suspeito.occurredOn)} · entrou como{' '}
+                        {suspeito.amountCents > 0 ? 'entrada' : 'saída'}, mas o texto diz{' '}
+                        {suspeito.esperado === 'saida' ? 'saída' : 'entrada'}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ) : null}
 

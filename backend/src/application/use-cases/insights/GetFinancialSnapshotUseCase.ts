@@ -27,6 +27,10 @@ export interface FinancialSnapshot {
   months: number;
   income: { totalCents: number; monthlyAverageCents: number };
   expense: { totalCents: number; monthlyAverageCents: number };
+  /** Aporte líquido no período. Fora da despesa: guardar não é gastar. */
+  saving: { totalCents: number; monthlyAverageCents: number };
+  /** Fatia da renda que não virou consumo. `null` sem receita no período. */
+  savingRatePercent: number | null;
   /** Soma mensal das assinaturas — o gasto que existe mesmo parado. */
   fixedMonthlyCents: number;
   variableMonthlyCents: number;
@@ -86,14 +90,27 @@ export class GetFinancialSnapshotUseCase {
     const categoryName = new Map(categoryList.map((c) => [c.id, c.name]));
     const nomeDe = (id: string | null) => (id ? (categoryName.get(id) ?? null) : null);
 
+    // Aporte sai de toda a análise de gasto: ele não é consumo, não é
+    // assinatura a cancelar e não é hábito a reduzir. Deixá-lo dentro
+    // faria a compra mensal de um título aparecer como o maior "gasto
+    // fixo" da pessoa.
+    const aporte = new Set(categoryList.filter((c) => c.isSaving).map((c) => c.id));
+    const semAporte = series.filter((ponto) => !ponto.categoryId || !aporte.has(ponto.categoryId));
+    const gastoAnalisavel = rawTransactions.filter(
+      (t) => !t.categoryId || !aporte.has(t.categoryId),
+    );
+
     // ---- totais da janela
-    const totalIncome = series.reduce((soma, ponto) => soma + ponto.incomeCents, 0);
-    const totalExpense = series.reduce((soma, ponto) => soma + ponto.expenseCents, 0);
+    const totalIncome = semAporte.reduce((soma, ponto) => soma + ponto.incomeCents, 0);
+    const totalExpense = semAporte.reduce((soma, ponto) => soma + ponto.expenseCents, 0);
+    const totalSaving = series
+      .filter((ponto) => ponto.categoryId && aporte.has(ponto.categoryId))
+      .reduce((soma, ponto) => soma + ponto.expenseCents - ponto.incomeCents, 0);
     const mesesComDados = new Set(series.map((ponto) => ponto.month)).size || 1;
 
     // ---- série mensal consolidada (a de categoria já traz os dois lados)
     const porMes = new Map<string, { incomeCents: number; expenseCents: number }>();
-    for (const ponto of series) {
+    for (const ponto of semAporte) {
       const atual = porMes.get(ponto.month) ?? { incomeCents: 0, expenseCents: 0 };
       atual.incomeCents += ponto.incomeCents;
       atual.expenseCents += ponto.expenseCents;
@@ -104,7 +121,7 @@ export class GetFinancialSnapshotUseCase {
       .sort((a, b) => a.month.localeCompare(b.month));
 
     // ---- recorrência
-    const grupos = detectRecurring(rawTransactions);
+    const grupos = detectRecurring(gastoAnalisavel);
     const comNome = (grupo: RecurringGroup): RecurringItem => ({
       ...grupo,
       categoryName: nomeDe(grupo.categoryId),
@@ -124,7 +141,7 @@ export class GetFinancialSnapshotUseCase {
 
     // ---- tendência por categoria
     const porCategoria = new Map<string, { month: string; expenseCents: number }[]>();
-    for (const ponto of series) {
+    for (const ponto of semAporte) {
       if (ponto.expenseCents === 0) continue;
       const chave = ponto.categoryId ?? 'sem-categoria';
       const lista = porCategoria.get(chave) ?? [];
@@ -178,6 +195,12 @@ export class GetFinancialSnapshotUseCase {
         monthlyAverageCents: Math.round(totalIncome / mesesComDados),
       },
       expense: { totalCents: totalExpense, monthlyAverageCents: expenseMonthlyAverage },
+      saving: {
+        totalCents: totalSaving,
+        monthlyAverageCents: Math.round(totalSaving / mesesComDados),
+      },
+      savingRatePercent:
+        totalIncome > 0 ? Math.round(((totalIncome - totalExpense) / totalIncome) * 100) : null,
       fixedMonthlyCents,
       variableMonthlyCents: Math.max(expenseMonthlyAverage - fixedMonthlyCents, 0),
       monthlySeries,

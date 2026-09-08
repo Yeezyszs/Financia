@@ -1,3 +1,4 @@
+import { conferirSinais, type SinalSuspeito } from '../../../domain/analysis/SignCheck.js';
 import { Import } from '../../../domain/entities/Import.js';
 import { Transaction } from '../../../domain/entities/Transaction.js';
 import { DomainError, NotFoundError } from '../../../domain/errors/DomainError.js';
@@ -35,6 +36,12 @@ export interface ImportStatementOutput {
   categorized: number;
   periodStart: string | null;
   periodEnd: string | null;
+  /**
+   * Linhas em que a descrição e o sinal do valor discordam. Vêm como
+   * aviso, não como correção: quando as duas fontes brigam, a decisão é
+   * de quem tem o extrato na mão.
+   */
+  suspectSigns: SinalSuspeito[];
 }
 
 /**
@@ -168,6 +175,17 @@ export class ImportStatementUseCase {
         if (match) usedRuleIds.push(match.ruleId);
       });
 
+      // Confere só o que entrou: repetir o aviso sobre linhas que já
+      // estavam no banco faria a reimportação de um período sobreposto
+      // reclamar de novo do mesmo problema.
+      const suspectSigns = conferirSinais(
+        toInsert.map((t) => ({
+          occurredOn: t.occurredOn,
+          description: t.description,
+          amountCents: t.amount.cents,
+        })),
+      );
+
       await this.transactions.createMany(toInsert);
       if (usedRuleIds.length > 0) await this.rules.incrementHits(usedRuleIds);
 
@@ -188,6 +206,7 @@ export class ImportStatementUseCase {
         categorized: usedRuleIds.length,
         periodStart: statement.periodStart,
         periodEnd: statement.periodEnd,
+        suspectSigns,
       };
     } catch (error) {
       // O log de importação registra a falha — a tela de Histórico precisa

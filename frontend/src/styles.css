@@ -1288,3 +1288,22 @@ select.card-control {
   border-color: var(--border);
   background: transparent;
 }
+
+/* Aviso de plausibilidade: não é erro (nada falhou), mas pede conferência. */
+.notice.aviso {
+  border-color: var(--series-expense);
+}
+
+.lista-suspeitos {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.lista-suspeitos li {
+  margin-bottom: 6px;
+  line-height: 1.45;
+}
+
+.lista-suspeitos .rec-meta {
+  display: block;
+}

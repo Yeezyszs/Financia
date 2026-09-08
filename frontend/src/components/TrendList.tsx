@@ -10,7 +10,7 @@ export function TrendList({
   onDrill,
 }: {
   trends: CategoryTrend[];
-  onDrill?: (drill: Omit<Drill, 'from' | 'to'>) => void;
+  onDrill?: (drill: Omit<Drill, 'from' | 'to' | 'origem'>) => void;
 }): ReactNode {
   const relevantes = trends
     .filter((t) => t.currentCents > 0 && Math.abs(t.changePercent) >= MINIMO_RELEVANTE)

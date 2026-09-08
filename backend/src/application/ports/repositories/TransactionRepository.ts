@@ -32,6 +32,8 @@ export interface MonthlyTotal {
   month: string;
   incomeCents: number;
   expenseCents: number;
+  /** Aporte líquido do mês: o que entrou menos o que foi resgatado. */
+  savingCents: number;
 }
 
 export interface CategoryMonthPoint {

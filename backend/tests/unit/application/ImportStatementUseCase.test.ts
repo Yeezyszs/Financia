@@ -160,6 +160,46 @@ describe('ImportStatementUseCase', () => {
     expect(ctx.imports.records[0]?.toJSON().errorMessage).toMatch(/não parece um extrato/i);
   });
 
+  it('avisa quando a descrição e o sinal discordam', async () => {
+    // Uma "Transferência enviada" com valor positivo — foi assim que três
+    // lançamentos viraram receita fantasma nos dados reais.
+    const content = [
+      'Data,Valor,Identificador,Descrição',
+      '2026-08-11,20.00,id-1,Transferência enviada pelo Pix - Tesouro Nacional',
+      '2026-08-12,-56.98,id-2,Transferência enviada pelo Pix - IMPLY RENTAL',
+      '2026-08-13,-40.00,id-3,Padaria do Bairro',
+    ].join('\n');
+
+    const result = await ctx.useCase.execute({ ...baseInput, filename: 'sinais.csv', content });
+
+    expect(result.rowsImported).toBe(3);
+    expect(result.suspectSigns).toHaveLength(1);
+    expect(result.suspectSigns[0]?.description).toContain('Tesouro Nacional');
+    expect(result.suspectSigns[0]?.esperado).toBe('saida');
+  });
+
+  it('não avisa de novo sobre linha que já estava no banco', async () => {
+    const content = [
+      'Data,Valor,Identificador,Descrição',
+      '2026-08-11,20.00,id-1,Transferência enviada pelo Pix - Tesouro Nacional',
+    ].join('\n');
+
+    const primeira = await ctx.useCase.execute({ ...baseInput, filename: 'a.csv', content });
+    expect(primeira.suspectSigns).toHaveLength(1);
+
+    // Reimportação proposital do mesmo arquivo: o dedupe por linha
+    // descarta tudo, e o aviso não pode voltar sobre uma transação que
+    // não entrou agora.
+    const segunda = await ctx.useCase.execute({
+      ...baseInput,
+      filename: 'a.csv',
+      content,
+      force: true,
+    });
+    expect(segunda.rowsImported).toBe(0);
+    expect(segunda.suspectSigns).toEqual([]);
+  });
+
   it('recusa importar para conta inexistente', async () => {
     await expect(
       ctx.useCase.execute({ ...baseInput, accountId: '00000000-0000-0000-0000-000000000000' }),

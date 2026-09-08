@@ -26,6 +26,8 @@ const base: FinancialSnapshot = {
   months: 6,
   income: { totalCents: 7600000, monthlyAverageCents: 1266667 },
   expense: { totalCents: 5320000, monthlyAverageCents: 886667 },
+  saving: { totalCents: 1200000, monthlyAverageCents: 200000 },
+  savingRatePercent: 30,
   fixedMonthlyCents: 34876,
   variableMonthlyCents: 851791,
   monthlySeries: [

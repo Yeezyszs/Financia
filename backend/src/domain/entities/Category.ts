@@ -1,4 +1,9 @@
-export type CategoryKind = 'income' | 'expense' | 'transfer';
+/**
+ * `saving` é aporte: dinheiro que saiu da conta e virou patrimônio.
+ * Sai do bolso como uma despesa sai, mas não foi consumido — tratá-lo
+ * como gasto faz a taxa de poupança aparecer como uma fração do que é.
+ */
+export type CategoryKind = 'income' | 'expense' | 'transfer' | 'saving';
 
 export interface CategoryProps {
   id: string;
@@ -38,6 +43,11 @@ export class Category {
   /** Categoria de transferência nunca entra em receita/despesa. */
   get countsTowardTotals(): boolean {
     return this.props.kind !== 'transfer';
+  }
+
+  /** Aporte: sai da conta, mas não é consumo. */
+  get isSaving(): boolean {
+    return this.props.kind === 'saving';
   }
 
   toJSON(): CategoryProps {

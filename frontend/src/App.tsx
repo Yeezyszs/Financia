@@ -165,6 +165,10 @@ export function App(): ReactNode {
             accounts={accounts}
             onImported={() => setDataVersion((version) => version + 1)}
             onAccountsChanged={loadReferenceData}
+            onDrill={(filtro) => {
+              setDrill((atual) => ({ filtro, n: (atual?.n ?? 0) + 1 }));
+              setScreen('transactions');
+            }}
           />
         ) : null}
       </main>
