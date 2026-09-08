@@ -52,6 +52,17 @@ export function monthLabel(month: string): string {
   return MONTH_NAMES[index] ?? month;
 }
 
+/**
+ * "2026-08" -> "Agosto de 2026". O nome por extenso é para onde a pessoa
+ * escolhe um mês; a abreviação serve a eixo de gráfico, onde não cabe.
+ */
+export function monthName(month: string): string {
+  const [ano, mes] = month.split('-').map(Number);
+  const data = new Date(Date.UTC(ano ?? 0, (mes ?? 1) - 1, 1));
+  const nome = data.toLocaleDateString('pt-BR', { month: 'long', timeZone: 'UTC' });
+  return `${nome.charAt(0).toUpperCase()}${nome.slice(1)} de ${ano}`;
+}
+
 export function monthLabelLong(month: string): string {
   const index = Number(month.slice(5, 7)) - 1;
   return `${MONTH_NAMES[index] ?? month}/${month.slice(0, 4)}`;
@@ -73,4 +84,36 @@ export function monthsBefore(year: number, month: number, meses: number): string
   const inicio = new Date(Date.UTC(year, month - 1 - meses, 1));
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${inicio.getUTCFullYear()}-${pad(inicio.getUTCMonth() + 1)}-01`;
+}
+
+/**
+ * Os últimos `quantidade` meses, do mais recente para o mais antigo, no
+ * formato YYYY-MM. Serve para o seletor de mês da listagem.
+ */
+export function ultimosMeses(quantidade: number, hoje = new Date()): string[] {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return Array.from({ length: quantidade }, (_, i) => {
+    const data = new Date(Date.UTC(hoje.getUTCFullYear(), hoje.getUTCMonth() - i, 1));
+    return `${data.getUTCFullYear()}-${pad(data.getUTCMonth() + 1)}`;
+  });
+}
+
+/** Primeiro e último dia de um mês YYYY-MM. */
+export function boundsOfMonth(month: string): { from: string; to: string } {
+  const [ano, mes] = month.split('-').map(Number);
+  return monthRange(ano ?? 0, mes ?? 1);
+}
+
+/**
+ * O mês que um intervalo representa, ou `null` quando ele não é
+ * exatamente um mês. É assim que o seletor sabe se deve mostrar "Agosto"
+ * ou "Personalizado" depois de um recorte vindo de outra tela.
+ */
+export function monthOfRange(from: string, to: string): string | null {
+  if (!from || !to) return null;
+  const mes = from.slice(0, 7);
+  if (to.slice(0, 7) !== mes) return null;
+
+  const limites = boundsOfMonth(mes);
+  return limites.from === from && limites.to === to ? mes : null;
 }

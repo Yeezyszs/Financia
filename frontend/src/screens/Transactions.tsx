@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api } from '../api/client.js';
 import type { Account, Category, Drill, Transaction } from '../api/types.js';
-import { date, money } from '../format.js';
+import { boundsOfMonth, date, money, monthName, monthOfRange, ultimosMeses } from '../format.js';
 import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 import { CategoryPicker } from '../components/CategoryPicker.js';
 import { TransactionModal } from '../components/TransactionModal.js';
@@ -245,6 +245,28 @@ export function Transactions({
 
   const lastPage = offset + PAGE_SIZE >= total;
 
+  // O intervalo continua sendo a verdade; o seletor de mês é um atalho
+  // que escreve nele. Assim um recorte vindo da Visão geral, que já chega
+  // com o mês inteiro, aparece aqui como o mês — e não como "personalizado".
+  const mesSelecionado = monthOfRange(from, to);
+  const mesesDisponiveis = useMemo(() => {
+    const lista = ultimosMeses(18);
+    // Um recorte antigo, vindo de outra tela, pode cair fora da lista.
+    if (mesSelecionado && !lista.includes(mesSelecionado)) lista.unshift(mesSelecionado);
+    return lista;
+  }, [mesSelecionado]);
+
+  const escolherMes = useCallback((valor: string) => {
+    if (valor === '') {
+      setFrom('');
+      setTo('');
+      return;
+    }
+    const limites = boundsOfMonth(valor);
+    setFrom(limites.from);
+    setTo(limites.to);
+  }, []);
+
   // No celular os filtros ocupavam a tela inteira antes de qualquer dado
   // aparecer, então ficam recolhidos — com a contagem de quantos estão
   // ativos, para não esconder que um filtro está limitando a lista.
@@ -313,6 +335,29 @@ export function Transactions({
                 {category.name}
               </option>
             ))}
+          </select>
+        </div>
+
+        <div className="field">
+          <label htmlFor="mes-filtro">Mês</label>
+          <select
+            id="mes-filtro"
+            value={mesSelecionado ?? (from || to ? 'personalizado' : '')}
+            onChange={(e) => escolherMes(e.target.value)}
+          >
+            <option value="">Qualquer período</option>
+            {mesesDisponiveis.map((mes) => (
+              <option key={mes} value={mes}>
+                {monthName(mes)}
+              </option>
+            ))}
+            {/* Só existe quando o intervalo não é um mês fechado: é um
+                estado que o seletor mostra, não uma escolha a fazer. */}
+            {mesSelecionado === null && (from || to) ? (
+              <option value="personalizado" disabled>
+                Personalizado
+              </option>
+            ) : null}
           </select>
         </div>
 
