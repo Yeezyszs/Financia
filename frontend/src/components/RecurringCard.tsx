@@ -20,6 +20,18 @@ export function RecurringCard({
 }): ReactNode {
   const { subscriptions, recurring, fixedMonthlyCents, variableMonthlyCents } = snapshot;
 
+  // A janela curta e a falta de dado dão a mesma tela vazia, mas pedem
+  // ações opostas: uma se resolve mudando o seletor, a outra esperando o
+  // próximo extrato.
+  if (!snapshot.canDetectRecurrence) {
+    return (
+      <div className="empty">
+        Recorrência exige pelo menos três meses na janela — é preciso ver o mesmo gasto se repetir.
+        A janela atual é de {snapshot.months} {snapshot.months === 1 ? 'mês' : 'meses'}.
+      </div>
+    );
+  }
+
   if (subscriptions.length === 0 && recurring.length === 0) {
     return (
       <div className="empty">

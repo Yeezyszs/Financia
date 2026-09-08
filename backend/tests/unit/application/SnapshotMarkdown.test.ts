@@ -28,6 +28,8 @@ const base: FinancialSnapshot = {
   expense: { totalCents: 5320000, monthlyAverageCents: 886667 },
   saving: { totalCents: 1200000, monthlyAverageCents: 200000 },
   savingRatePercent: 30,
+  canCompare: true,
+  canDetectRecurrence: true,
   fixedMonthlyCents: 34876,
   variableMonthlyCents: 851791,
   monthlySeries: [
@@ -120,5 +122,49 @@ describe('snapshotToMarkdown', () => {
     expect(texto).toContain('Sem movimento registrado neste mês.');
     expect(texto).not.toContain('undefined');
     expect(texto).not.toContain('NaN');
+  });
+});
+
+describe('resumo de um mês só', () => {
+  const umMes: FinancialSnapshot = {
+    ...base,
+    months: 1,
+    canCompare: false,
+    canDetectRecurrence: false,
+    monthlySeries: [{ month: '2026-08', incomeCents: 1250000, expenseCents: 837445 }],
+    subscriptions: [],
+    recurring: [],
+    trends: [
+      {
+        categoryId: 'c1',
+        name: 'Alimentação',
+        currentCents: 128790,
+        averageCents: 0,
+        changePercent: 0,
+        series: [],
+      },
+    ],
+  };
+
+  it('não escreve "média dos últimos 1 meses"', () => {
+    const texto = snapshotToMarkdown(umMes);
+    expect(texto).not.toContain('Média dos últimos');
+  });
+
+  it('avisa por que não há comparação nem assinatura', () => {
+    const texto = snapshotToMarkdown(umMes);
+    expect(texto).toContain('recorte é de um mês só');
+  });
+
+  it('a tabela de categorias perde as colunas que seriam só traço', () => {
+    const texto = snapshotToMarkdown(umMes);
+    expect(texto).toContain('| Categoria | Este mês |');
+    expect(texto).not.toContain('Média dos meses anteriores');
+  });
+
+  it('a janela maior continua com a comparação inteira', () => {
+    const texto = snapshotToMarkdown(base);
+    expect(texto).toContain('Média dos últimos');
+    expect(texto).toContain('Média dos meses anteriores');
   });
 });

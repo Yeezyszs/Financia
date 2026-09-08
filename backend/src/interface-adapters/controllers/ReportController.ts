@@ -35,7 +35,9 @@ const snapshotSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}$/)
     .optional(),
-  months: z.coerce.number().int().min(2).max(24).optional(),
+  // 1 é um recorte legítimo: "só este mês". O que ele não permite é
+  // comparar nem detectar recorrência, e disso quem cuida é a resposta.
+  months: z.coerce.number().int().min(1).max(24).optional(),
 });
 
 export class ReportController {

@@ -268,6 +268,8 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
               onChange={(e) => setJanela(Number(e.target.value))}
               aria-label="Janela da análise de recorrência"
             >
+              <option value={1}>só o mês de referência</option>
+              <option value={2}>últimos 2 meses</option>
               <option value={3}>últimos 3 meses</option>
               <option value={6}>últimos 6 meses</option>
               <option value={12}>últimos 12 meses</option>
@@ -289,12 +291,18 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
 
         <div className="card">
           <h2 className="card-title">
-            {MONTHS[month - 1]} comparado à média dos últimos {janela} meses
+            {janela > 1
+              ? `${MONTHS[month - 1]} comparado à média dos últimos ${janela} meses`
+              : `Despesas de ${MONTHS[month - 1]}`}
           </h2>
           {erroSnapshot ? (
             <div className="notice error">{erroSnapshot}</div>
           ) : snapshot ? (
-            <TrendList trends={snapshot.trends} onDrill={drillDoMes} />
+            <TrendList
+              trends={snapshot.trends}
+              canCompare={snapshot.canCompare}
+              onDrill={drillDoMes}
+            />
           ) : (
             <div className="stack">
               {[0, 1, 2].map((i) => (
@@ -308,8 +316,9 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
       <div className="card" style={{ marginTop: 14 }}>
         <h2 className="card-title">Analisar com o Claude</h2>
         <p className="page-subtitle" style={{ marginBottom: 14 }}>
-          Gera um resumo dos últimos {janela} meses — totais, assinaturas, recorrentes e variações —
-          já com o contexto necessário para uma conversa sobre onde economizar.
+          {janela > 1
+            ? `Gera um resumo dos últimos ${janela} meses — totais, assinaturas, recorrentes e variações — já com o contexto necessário para uma conversa sobre onde economizar.`
+            : `Gera um resumo só de ${MONTHS[month - 1]} — totais e gasto por categoria. Assinaturas e variações precisam de mais meses na janela.`}
         </p>
         <ExportSummary month={`${year}-${String(month).padStart(2, '0')}`} months={janela} />
       </div>

@@ -94,6 +94,37 @@ describe('GetFinancialSnapshotUseCase', () => {
     expect(snapshot.trends[0]?.changePercent).toBe(0);
   });
 
+  it('recorte de um mês diz o que não pode responder, em vez de devolver vazio', async () => {
+    const raw = [tx('2026-08-05', 'Netflix.com', -5590, 'cat-sub')];
+    const series: CategoryMonthPoint[] = [
+      { month: '2026-08', categoryId: 'cat-sub', incomeCents: 0, expenseCents: 5590, count: 1 },
+    ];
+
+    const snapshot = await new GetFinancialSnapshotUseCase(repo(series, raw), categorias).execute({
+      userId: USER_ID,
+      referenceMonth: '2026-08',
+      months: 1,
+    });
+
+    // Os totais do mês continuam valendo...
+    expect(snapshot.expense.totalCents).toBe(5590);
+    // ...mas comparar e detectar recorrência exigem mais de um mês, e
+    // isso é dito e não deduzido de uma lista vazia.
+    expect(snapshot.canCompare).toBe(false);
+    expect(snapshot.canDetectRecurrence).toBe(false);
+  });
+
+  it('dois meses já permitem comparar, mas ainda não detectar recorrência', async () => {
+    const snapshot = await new GetFinancialSnapshotUseCase(repo([], []), categorias).execute({
+      userId: USER_ID,
+      referenceMonth: '2026-08',
+      months: 2,
+    });
+
+    expect(snapshot.canCompare).toBe(true);
+    expect(snapshot.canDetectRecurrence).toBe(false);
+  });
+
   it('separa gasto fixo de variável na média mensal', async () => {
     const series: CategoryMonthPoint[] = [
       { month: '2026-07', categoryId: 'cat-food', incomeCents: 0, expenseCents: 100000, count: 8 },

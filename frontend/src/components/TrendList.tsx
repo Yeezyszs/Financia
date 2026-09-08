@@ -7,11 +7,26 @@ const MINIMO_RELEVANTE = 10;
 
 export function TrendList({
   trends,
+  canCompare = true,
   onDrill,
 }: {
   trends: CategoryTrend[];
+  /** Falso numa janela de um mês: a média seria o próprio mês. */
+  canCompare?: boolean;
   onDrill?: (drill: Omit<Drill, 'from' | 'to' | 'origem'>) => void;
 }): ReactNode {
+  // "Nada variou" e "não dá para comparar" são coisas diferentes, e a
+  // segunda dita disfarçada de primeira faz a pessoa concluir que o mês
+  // foi igual aos outros — quando não há outros na janela.
+  if (!canCompare) {
+    return (
+      <div className="empty">
+        Comparar exige pelo menos dois meses na janela. Aumente o período em “Gastos recorrentes”
+        para ver o que mudou.
+      </div>
+    );
+  }
+
   const relevantes = trends
     .filter((t) => t.currentCents > 0 && Math.abs(t.changePercent) >= MINIMO_RELEVANTE)
     .slice(0, 6);

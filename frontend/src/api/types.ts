@@ -178,6 +178,9 @@ export interface Snapshot {
   expense: { totalCents: number; monthlyAverageCents: number };
   saving: { totalCents: number; monthlyAverageCents: number };
   savingRatePercent: number | null;
+  /** Uma janela de um mês dá totais, mas não comparação nem recorrência. */
+  canCompare: boolean;
+  canDetectRecurrence: boolean;
   fixedMonthlyCents: number;
   variableMonthlyCents: number;
   subscriptions: RecurringItem[];

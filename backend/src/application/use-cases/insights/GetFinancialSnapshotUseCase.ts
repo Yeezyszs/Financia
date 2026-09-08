@@ -31,6 +31,15 @@ export interface FinancialSnapshot {
   saving: { totalCents: number; monthlyAverageCents: number };
   /** Fatia da renda que não virou consumo. `null` sem receita no período. */
   savingRatePercent: number | null;
+  /**
+   * O que a janela escolhida permite responder. Uma janela de um mês dá
+   * totais, mas não comparação (a média seria o próprio mês) nem
+   * recorrência (que exige ver a mesma coisa se repetir). Dizer isso é
+   * diferente de devolver lista vazia: vazio parece "não achei nada",
+   * quando na verdade é "não dá para procurar".
+   */
+  canCompare: boolean;
+  canDetectRecurrence: boolean;
   /** Soma mensal das assinaturas — o gasto que existe mesmo parado. */
   fixedMonthlyCents: number;
   variableMonthlyCents: number;
@@ -201,6 +210,8 @@ export class GetFinancialSnapshotUseCase {
       },
       savingRatePercent:
         totalIncome > 0 ? Math.round(((totalIncome - totalExpense) / totalIncome) * 100) : null,
+      canCompare: months >= 2,
+      canDetectRecurrence: months >= 3,
       fixedMonthlyCents,
       variableMonthlyCents: Math.max(expenseMonthlyAverage - fixedMonthlyCents, 0),
       monthlySeries,

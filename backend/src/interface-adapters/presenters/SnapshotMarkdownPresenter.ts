@@ -93,6 +93,12 @@ export function snapshotToMarkdown(snapshot: FinancialSnapshot): string {
     '  estão excluídas — elas não são despesa, apenas dinheiro mudando de lugar.',
     '- Aportes em investimento também estão fora da despesa: o dinheiro saiu da conta, mas',
     '  virou patrimônio em vez de consumo. Eles aparecem em linha própria.',
+    ...(snapshot.canCompare
+      ? []
+      : [
+          '- O recorte é de um mês só. Não há comparação com meses anteriores nem detecção de',
+          '  assinaturas — as duas coisas exigem ver o mesmo gasto se repetir ao longo do tempo.',
+        ]),
     '- "Assinatura" é gasto recorrente de valor estável, que eu poderia cancelar por inteiro.',
     '  "Recorrente variável" é hábito com valor que muda (mercado, delivery) — dá para reduzir,',
     '  não para zerar.',
@@ -114,20 +120,22 @@ export function snapshotToMarkdown(snapshot: FinancialSnapshot): string {
     linhas.push('Sem movimento registrado neste mês.', '');
   }
 
-  linhas.push(
-    `## Média dos últimos ${snapshot.monthlySeries.length} meses`,
-    '',
-    `- Receita média: ${reais(snapshot.income.monthlyAverageCents)}`,
-    `- Despesa média (só consumo): ${reais(despesaMedia)}`,
-    `- Aporte médio em investimento: ${reais(snapshot.saving.monthlyAverageCents)} por mês`,
-    ...(snapshot.savingRatePercent === null
-      ? []
-      : [`- Taxa de poupança: ${snapshot.savingRatePercent}% da renda não virou consumo`]),
-    `- Gasto fixo (assinaturas ativas): ${reais(snapshot.fixedMonthlyCents)} por mês` +
-      ` — ${percentual(snapshot.fixedMonthlyCents, despesaMedia)}% da despesa`,
-    `- Gasto variável: ${reais(snapshot.variableMonthlyCents)} por mês`,
-    '',
-  );
+  if (snapshot.canCompare) {
+    linhas.push(
+      `## Média dos últimos ${snapshot.monthlySeries.length} meses`,
+      '',
+      `- Receita média: ${reais(snapshot.income.monthlyAverageCents)}`,
+      `- Despesa média (só consumo): ${reais(despesaMedia)}`,
+      `- Aporte médio em investimento: ${reais(snapshot.saving.monthlyAverageCents)} por mês`,
+      ...(snapshot.savingRatePercent === null
+        ? []
+        : [`- Taxa de poupança: ${snapshot.savingRatePercent}% da renda não virou consumo`]),
+      `- Gasto fixo (assinaturas ativas): ${reais(snapshot.fixedMonthlyCents)} por mês` +
+        ` — ${percentual(snapshot.fixedMonthlyCents, despesaMedia)}% da despesa`,
+      `- Gasto variável: ${reais(snapshot.variableMonthlyCents)} por mês`,
+      '',
+    );
+  }
 
   if (assinaturasAtivas.length > 0) {
     linhas.push(
@@ -152,13 +160,26 @@ export function snapshotToMarkdown(snapshot: FinancialSnapshot): string {
     linhas.push(
       '## Despesas por categoria neste mês',
       '',
-      '| Categoria | Este mês | Média dos meses anteriores | Variação |',
-      '| --- | ---: | ---: | ---: |',
-      ...tendencias.map((t) => {
-        const variacao =
-          t.averageCents > 0 ? `${t.changePercent > 0 ? '+' : ''}${t.changePercent}%` : '—';
-        return `| ${t.name} | ${reais(t.currentCents)} | ${reais(t.averageCents)} | ${variacao} |`;
-      }),
+      ...(snapshot.canCompare
+        ? [
+            '| Categoria | Este mês | Média dos meses anteriores | Variação |',
+            '| --- | ---: | ---: | ---: |',
+            ...tendencias.map((t) => {
+              const variacao =
+                t.averageCents > 0 ? `${t.changePercent > 0 ? '+' : ''}${t.changePercent}%` : '—';
+              return (
+                `| ${t.name} | ${reais(t.currentCents)} | ${reais(t.averageCents)} |` +
+                ` ${variacao} |`
+              );
+            }),
+          ]
+        : [
+            // Sem meses anteriores, as colunas de média e variação seriam
+            // duas colunas de traço ocupando metade da tabela.
+            '| Categoria | Este mês |',
+            '| --- | ---: |',
+            ...tendencias.map((t) => `| ${t.name} | ${reais(t.currentCents)} |`),
+          ]),
       '',
     );
   }
