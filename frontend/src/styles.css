@@ -3,10 +3,14 @@
 
    Duas escolhas herdadas de lá e uma mantida daqui:
 
-   - A identidade é verde sobre off-white esverdeado, com a barra de
-     navegação em verde-petróleo. Sora carrega números e títulos, Inter o
-     resto — display pesado num corpo neutro é o que dá o ar de produto
-     financeiro.
+   - A identidade é verde, com a barra de navegação em verde-petróleo.
+     Sora carrega números e títulos, Inter o resto — display pesado num
+     corpo neutro é o que dá o ar de produto financeiro.
+
+   - O fundo é azul-claro, escolha do Pedro. Os dois tons vizinhos
+     (`--surface-2` e `--surface-3`) acompanham o mesmo matiz: eles
+     nasceram esverdeados junto com o fundo antigo, e sobre azul um
+     cinza-quente denuncia que a troca foi parcial.
 
    - Receita em verde e despesa em vermelho, como no original. Testei o
      par sob deuteranopia (4,1x de contraste) e protanopia (3,0x): eles
@@ -22,10 +26,10 @@
 :root {
   color-scheme: light;
 
-  --bg: #F0F8FE;
+  --bg: #f0f8fe;
   --surface: #ffffff;
-  --surface-2: #f7faf8;
-  --surface-3: #eef5f1;
+  --surface-2: #f7fbff;
+  --surface-3: #e8f2fb;
 
   --border: rgb(0 0 0 / 0.07);
   --border-2: rgb(0 0 0 / 0.04);
