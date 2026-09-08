@@ -1,53 +1,109 @@
 /* =====================================================================
-   Tokens. A paleta de séries é a validada para daltonismo nos dois
-   modos (azul = receitas, laranja = despesas) — ver README.
+   Sistema visual do Financia, baseado no dashboard do Going North.
+
+   Duas escolhas herdadas de lá e uma mantida daqui:
+
+   - A identidade é verde sobre off-white esverdeado, com a barra de
+     navegação em verde-petróleo. Sora carrega números e títulos, Inter o
+     resto — display pesado num corpo neutro é o que dá o ar de produto
+     financeiro.
+
+   - Receita em verde e despesa em vermelho, como no original. Testei o
+     par sob deuteranopia (4,1x de contraste) e protanopia (3,0x): eles
+     não colapsam porque diferem em luminosidade, não só em matiz. Ainda
+     assim o sinal do valor acompanha a cor em todo lugar, para a cor
+     nunca ser o único canal.
+
+   - O modo escuro é acréscimo meu: o dashboard original é só claro, e
+     jogar fora o tema escuro seria uma regressão. As cores de marca
+     ganham versões mais claras lá, senão o verde some no fundo.
    ===================================================================== */
+
 :root {
   color-scheme: light;
 
-  --surface-0: #f4f4f2;
-  --surface-1: #fcfcfb;
-  --surface-2: #ececea;
-  --border: #dcdcd8;
-  --border-strong: #c4c4bd;
+  --bg: #f0f4f2;
+  --surface: #ffffff;
+  --surface-2: #f7faf8;
+  --surface-3: #eef5f1;
 
-  --text-primary: #0b0b0b;
-  --text-secondary: #52514e;
-  --text-muted: #7a7973;
+  --border: rgb(0 0 0 / 0.07);
+  --border-2: rgb(0 0 0 / 0.04);
+  --border-strong: rgb(0 0 0 / 0.14);
 
-  --series-income: #2a78d6;
-  --series-expense: #eb6834;
-  --accent: #2a78d6;
-  --danger: #b3261e;
+  --text: #0f2318;
+  --text-2: #3d5a47;
+  --text-3: #7a9585;
 
-  --radius: 10px;
-  --radius-sm: 6px;
-  --shadow: 0 1px 2px rgb(0 0 0 / 0.06), 0 1px 8px rgb(0 0 0 / 0.04);
+  --nav-bg: #003333;
+  --nav-text: rgb(255 255 255 / 0.75);
 
+  --green: #368547;
+  --green-h: #13834a;
+  --green-light: rgb(54 133 71 / 0.12);
+  --green-glow: rgb(54 133 71 / 0.22);
+  --teal: #0d9488;
+  --teal-light: rgb(13 148 136 / 0.12);
+  --red: #ef4444;
+  --red-light: rgb(239 68 68 / 0.1);
+  --gold: #a8863f;
+  --gold-light: rgb(200 169 110 / 0.16);
+  --indigo: #6366f1;
+  --indigo-light: rgb(99 102 241 / 0.1);
+
+  --series-income: var(--green);
+  --series-expense: var(--red);
+  --accent: var(--green);
+  --danger: var(--red);
+
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+
+  --shadow: 0 2px 12px rgb(0 0 0 / 0.07);
+  --shadow-md: 0 4px 24px rgb(0 0 0 / 0.1);
+
+  --font-d: 'Sora', system-ui, sans-serif;
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
 
-    --surface-0: #121211;
-    --surface-1: #1a1a19;
-    --surface-2: #232322;
-    --border: #33332f;
-    --border-strong: #4a4a45;
+    --bg: #0a1512;
+    --surface: #11201a;
+    --surface-2: #16291f;
+    --surface-3: #1d3327;
 
-    --text-primary: #ffffff;
-    --text-secondary: #c3c2b7;
-    --text-muted: #8f8e85;
+    --border: rgb(255 255 255 / 0.09);
+    --border-2: rgb(255 255 255 / 0.05);
+    --border-strong: rgb(255 255 255 / 0.2);
 
-    --series-income: #3987e5;
-    --series-expense: #d95926;
-    --accent: #3987e5;
-    --danger: #f2b8b5;
+    --text: #e9f1ea;
+    --text-2: #a8c2b0;
+    --text-3: #7d9a87;
 
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 1px 8px rgb(0 0 0 / 0.25);
+    --nav-bg: #04231f;
+
+    /* Mais claras que as do tema claro: o verde de marca sobre fundo
+       escuro fica ilegível se não subir de luminosidade. */
+    --green: #5ab472;
+    --green-h: #74c98a;
+    --green-light: rgb(90 180 114 / 0.16);
+    --green-glow: rgb(90 180 114 / 0.24);
+    --teal: #2dd4bf;
+    --teal-light: rgb(45 212 191 / 0.14);
+    --red: #f87171;
+    --red-light: rgb(248 113 113 / 0.14);
+    --gold: #d4b678;
+    --gold-light: rgb(212 182 120 / 0.16);
+    --indigo: #a5b4fc;
+    --indigo-light: rgb(165 180 252 / 0.14);
+
+    --shadow: 0 2px 12px rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 24px rgb(0 0 0 / 0.5);
   }
 }
 
@@ -57,906 +113,307 @@
   box-sizing: border-box;
 }
 
+/* `hidden` tem que ganhar de qualquer `display` que a classe imponha —
+   sem isto, um `.filters` escondido continua aparecendo, porque
+   `display: flex` vence o `display: none` padrão do atributo. */
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   font-family: var(--font);
-  background: var(--surface-0);
-  color: var(--text-primary);
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
   -webkit-font-smoothing: antialiased;
 }
 
-/* ---------------------------------------------------------------- layout */
+h1,
+h2,
+h3 {
+  font-family: var(--font-d);
+  margin: 0;
+}
+
+::selection {
+  background: var(--green-light);
+}
+
+/* -------------------------------------------------------------- app */
 .app {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
 
+main {
+  width: 100%;
+  max-width: 1340px;
+  margin: 0 auto;
+  padding: 28px 32px 48px;
+}
+
+/* -------------------------------------------------------- navegação */
 .topbar {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  padding: 0 24px;
-  height: 60px;
-  background: var(--surface-1);
-  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 200;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  padding: 0 32px;
+  background: var(--nav-bg);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.06);
 }
 
 .brand {
-  font-weight: 650;
-  font-size: 17px;
-  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-right: 36px;
+  font-family: var(--font-d);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--green);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
 .nav {
   display: flex;
+  align-items: center;
   gap: 4px;
   flex: 1;
-  overflow-x: auto;
 }
 
 .nav button {
-  border: 0;
-  background: transparent;
-  color: var(--text-secondary);
   font: inherit;
-  font-size: 14px;
-  padding: 7px 12px;
-  border-radius: var(--radius-sm);
+  font-size: 0.84rem;
+  font-weight: 500;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--nav-text);
   cursor: pointer;
-  white-space: nowrap;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .nav button:hover {
-  background: var(--surface-2);
-  color: var(--text-primary);
+  color: #fff;
+  background: rgb(255 255 255 / 0.07);
 }
 
 .nav button[aria-current='page'] {
-  background: var(--surface-2);
-  color: var(--text-primary);
-  font-weight: 550;
-}
-
-main {
-  flex: 1;
-  width: 100%;
-  max-width: 1180px;
-  margin: 0 auto;
-  padding: 24px;
-}
-
-.page-title {
-  font-size: 22px;
-  font-weight: 650;
-  letter-spacing: -0.015em;
-  margin: 0 0 4px;
-}
-
-.page-subtitle {
-  color: var(--text-secondary);
-  font-size: 14px;
-  margin: 0 0 20px;
-}
-
-/* ----------------------------------------------------------------- cards */
-.card {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px;
-  box-shadow: var(--shadow);
-}
-
-.card-title {
-  font-size: 13px;
-  font-weight: 550;
-  color: var(--text-secondary);
-  margin: 0 0 12px;
-}
-
-.kpi-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 14px;
-  margin-bottom: 20px;
-}
-
-.kpi-label {
-  font-size: 13px;
-  color: var(--text-secondary);
-  margin: 0 0 6px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-}
-
-.kpi-value {
-  font-size: 26px;
-  font-weight: 650;
-  letter-spacing: -0.02em;
-  font-variant-numeric: tabular-nums;
-}
-
-.kpi-hint {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 5px;
-}
-
-.swatch {
-  width: 9px;
-  height: 9px;
-  border-radius: 2px;
-  display: inline-block;
-  flex: none;
-}
-
-.chart-grid {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  align-items: start; /* cada card com a própria altura, sem esticar */
-  gap: 14px;
-}
-
-@media (max-width: 900px) {
-  .chart-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ---------------------------------------------------------------- charts */
-.chart-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-
-.legend {
-  display: flex;
-  gap: 14px;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.legend span {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.chart-svg {
-  display: block;
-  width: 100%;
-  overflow: visible;
-}
-
-.chart-svg .grid-line {
-  stroke: var(--border);
-  stroke-width: 1;
-}
-
-.chart-svg .axis-label {
-  fill: var(--text-muted);
-  font-size: 11px;
-}
-
-.chart-svg .hit {
-  fill: transparent;
-  cursor: pointer;
-}
-
-.tooltip {
-  position: fixed;
-  pointer-events: none;
-  background: var(--surface-1);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  padding: 8px 10px;
-  font-size: 12px;
-  box-shadow: var(--shadow);
-  z-index: 40;
-  min-width: 150px;
-}
-
-.tooltip-title {
-  font-weight: 600;
-  margin-bottom: 5px;
-}
-
-.tooltip-row {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  justify-content: space-between;
-  color: var(--text-secondary);
-}
-
-.tooltip-row b {
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
-}
-
-.cat-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 4px 10px;
-  font-size: 13px;
-  padding: 7px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.cat-row:last-child {
-  border-bottom: 0;
-}
-
-.cat-bar-track {
-  grid-column: 1 / -1;
-  display: block;
-  height: 8px;
-  background: var(--surface-2);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.cat-bar-fill {
-  display: block;
-  height: 100%;
-  border-radius: 4px;
-  background: var(--series-expense);
-}
-
-.cat-value {
-  font-variant-numeric: tabular-nums;
-  color: var(--text-secondary);
-}
-
-/* ----------------------------------------------------------------- table */
-.table-wrap {
-  overflow-x: auto;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--surface-1);
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-}
-
-th {
-  text-align: left;
-  font-size: 12px;
-  font-weight: 550;
-  color: var(--text-secondary);
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-  background: var(--surface-1);
-}
-
-td {
-  padding: 11px 14px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
-
-tr:last-child td {
-  border-bottom: 0;
-}
-
-.num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-.amount-in {
-  color: var(--series-income);
-  font-weight: 550;
-}
-
-.amount-out {
-  font-weight: 550;
-}
-
-.tag {
-  display: inline-block;
-  font-size: 11px;
-  padding: 2px 7px;
-  border-radius: 99px;
-  background: var(--surface-2);
-  color: var(--text-secondary);
-  border: 1px solid var(--border);
-  white-space: nowrap;
-}
-
-/* Linha de upload: seletor de conta + botão, alinhados pela base. */
-.filters--upload {
-  margin-bottom: 0;
-  align-items: flex-end;
-}
-
-/* --------------------------------------------------------------- filtros */
-/* display explícito vence o atributo hidden — sem esta regra, recolher os
-   filtros no celular não surtia efeito nenhum. */
-[hidden] {
-  display: none !important;
-}
-
-.filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 16px;
-  align-items: flex-end;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.field label {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-input,
-select,
-textarea {
-  font: inherit;
-  font-size: 14px;
-  padding: 7px 9px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-strong);
-  background: var(--surface-1);
-  color: var(--text-primary);
-  min-width: 150px;
-}
-
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
-}
-
-button.primary {
-  font: inherit;
-  font-size: 14px;
-  font-weight: 550;
-  padding: 8px 15px;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  background: var(--accent);
   color: #fff;
-  cursor: pointer;
+  font-weight: 600;
+  background: var(--green);
 }
 
-button.primary:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
+.nav-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-button.ghost:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.86rem;
+  color: rgb(255 255 255 / 0.85);
 }
 
-button.ghost {
-  font: inherit;
-  font-size: 14px;
-  padding: 8px 13px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-strong);
-  background: var(--surface-1);
-  color: var(--text-primary);
-  cursor: pointer;
-}
-
-/* -------------------------------------------------------------- estados */
-.notice {
-  padding: 12px 14px;
-  border-radius: var(--radius-sm);
-  font-size: 14px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface-2);
-  margin-bottom: 16px;
-}
-
-.notice.error {
-  border-color: var(--danger);
-  color: var(--danger);
-}
-
-.empty {
-  padding: 36px 18px;
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
-
-.skeleton {
-  height: 14px;
-  border-radius: 4px;
-  background: var(--surface-2);
-  animation: pulse 1.4s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  50% {
-    opacity: 0.5;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .skeleton {
-    animation: none;
-  }
-}
-
-/* ------------------------------------------------------------ token gate */
-.gate {
-  min-height: 100vh;
+.nav-avatar {
   display: grid;
   place-items: center;
-  padding: 24px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--green);
+  color: #fff;
+  font-family: var(--font-d);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
-.gate-card {
-  width: 100%;
-  max-width: 380px;
-}
-
-.gate-card p {
-  color: var(--text-secondary);
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.gate-card .field {
-  width: 100%;
-}
-
-.gate-card input {
-  width: 100%;
-  min-width: 0;
-}
-
-.dropzone {
-  border: 1.5px dashed var(--border-strong);
-  border-radius: var(--radius);
-  padding: 28px;
-  text-align: center;
-  color: var(--text-secondary);
-  font-size: 14px;
+.btn-logout {
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 6px 13px;
+  border: 1px solid rgb(255 255 255 / 0.15);
+  border-radius: 7px;
+  background: transparent;
+  color: rgb(255 255 255 / 0.65);
   cursor: pointer;
-  background: var(--surface-1);
+  transition:
+    border-color 0.2s,
+    color 0.2s;
 }
 
-.dropzone.dragging {
-  border-color: var(--accent);
-  color: var(--text-primary);
+.btn-logout:hover {
+  border-color: rgb(255 255 255 / 0.35);
+  color: #fff;
 }
 
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.row {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-/* =====================================================================
-   Celular
-   A quebra é em 720px: abaixo disso a tabela de 5 colunas deixa o valor
-   — a informação mais importante — fora da tela.
-   ===================================================================== */
-
-/* Barra de navegação fixa no rodapé, ao alcance do polegar. */
+/* Barra fixa do rodapé, no alcance do polegar. */
 .tabbar {
   position: fixed;
-  bottom: 0;
   left: 0;
   right: 0;
-  display: none;
-  background: var(--surface-1);
-  border-top: 1px solid var(--border);
+  bottom: 0;
+  z-index: 200;
+  display: flex;
+  background: var(--nav-bg);
   padding-bottom: env(safe-area-inset-bottom);
-  z-index: 20;
+  box-shadow: 0 -2px 16px rgb(0 0 0 / 0.18);
 }
 
 .tabbar button {
   flex: 1;
-  border: 0;
-  background: transparent;
-  color: var(--text-secondary);
   font: inherit;
-  font-size: 11px;
+  font-size: 0.7rem;
+  font-weight: 500;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  /* 56px é o mínimo confortável para toque; menos que isso erra o alvo. */
-  min-height: 56px;
-  padding: 8px 4px;
+  padding: 9px 4px 11px;
+  border: 0;
+  background: transparent;
+  color: var(--nav-text);
   cursor: pointer;
-}
-
-.tabbar button svg {
-  width: 22px;
-  height: 22px;
-  fill: currentColor;
 }
 
 .tabbar button[aria-current='page'] {
-  color: var(--accent);
-  font-weight: 550;
-}
-
-/* Lista de transações em cartões */
-.card-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.tx-card {
-  background: var(--surface-1);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 13px 14px;
-}
-
-.tx-card-top {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.tx-desc {
-  font-size: 15px;
-  line-height: 1.35;
-  /* Descrição de extrato é longa; duas linhas bastam e o valor continua
-     alinhado à direita sem ser empurrado para fora. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.tx-card-top .num {
-  font-size: 15px;
-  flex: none;
-}
-
-.tx-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-  margin-top: 7px;
-  font-size: 12.5px;
-  color: var(--text-secondary);
-}
-
-.filter-toggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.badge {
-  display: inline-grid;
-  place-items: center;
-  min-width: 19px;
-  height: 19px;
-  padding: 0 5px;
-  border-radius: 99px;
-  background: var(--accent);
   color: #fff;
-  font-size: 11px;
   font-weight: 600;
 }
 
-@media (max-width: 720px) {
-  .tabbar {
-    display: flex;
-  }
-
-  main {
-    padding: 16px 14px;
-    /* Espaço para a barra do rodapé não cobrir o fim do conteúdo. */
-    padding-bottom: calc(72px + env(safe-area-inset-bottom));
-  }
-
-  .topbar {
-    height: 54px;
-    padding: 0 14px;
-    justify-content: space-between;
-  }
-
-  .page-title {
-    font-size: 20px;
-  }
-
-  .page-subtitle {
-    font-size: 13.5px;
-  }
-
-  .kpi-row {
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  /* O saldo ocupa a linha inteira: é o número que resume o mês. */
-  .kpi-row .card:last-child {
-    grid-column: 1 / -1;
-  }
-
-  .kpi-value {
-    font-size: 21px;
-  }
-
-  .card {
-    padding: 14px;
-  }
-
-  .filters {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  /* No celular a coluna manda: alinhar pela base jogaria o botão para
-     o canto direito, longe do seletor a que ele pertence. */
-  .filters--upload {
-    align-items: stretch;
-  }
-
-  /* Mês e ano são curtos e andam juntos: empilhá-los gasta meia tela
-     antes de o primeiro número aparecer. */
-  .filters--compact {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-
-  .filters .field,
-  .filters input,
-  .filters select {
-    width: 100%;
-    min-width: 0;
-  }
-
-  /* Alvos de toque: 16px no input também evita o zoom automático do iOS.
-     Checkbox fica de fora — esticá-lo vira um quadrado deformado. */
-  input:not([type='checkbox']),
-  select,
-  button.primary,
-  button.ghost {
-    min-height: 44px;
-    font-size: 16px;
-  }
-
-  input[type='checkbox'] {
-    width: 20px;
-    height: 20px;
-    min-width: 20px;
-    flex: none;
-  }
-
-  .legend {
-    font-size: 11px;
-    gap: 10px;
-  }
+.tabbar svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
 }
 
-/* ------------------------------------------------------- análise (fase 7) */
-.split-bar {
-  height: 10px;
-  border-radius: 5px;
-  background: var(--series-expense);
-  overflow: hidden;
-  display: flex;
-}
-
-/* Fixo em azul, variável em laranja: mesma paleta validada dos gráficos,
-   e a ordem é sempre a mesma para a barra ser comparável entre meses. */
-.split-fixo {
-  display: block;
-  height: 100%;
-  background: var(--series-income);
-  border-right: 2px solid var(--surface-1);
-}
-
-.split-legend {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 12.5px;
-  color: var(--text-secondary);
-  flex-wrap: wrap;
-}
-
-.split-legend b {
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
-}
-
-.rec-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 2px 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--border);
-  font-size: 14px;
-}
-
-.rec-row:last-child {
-  border-bottom: 0;
-}
-
-.rec-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.rec-meta {
-  grid-column: 1 / -1;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.delta {
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-
-/* Gastar mais é o alerta; gastar menos é o resultado bom. Cores das
-   séries, não semáforo — vermelho/verde falha em daltonismo, e o sinal
-   já vem escrito no + e no −. */
-.delta-up {
-  color: var(--series-expense);
-}
-
-.delta-down {
-  color: var(--series-income);
-}
-
-.export-text {
-  width: 100%;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.5;
-  padding: 10px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-strong);
-  background: var(--surface-2);
-  color: var(--text-primary);
-  resize: vertical;
-}
-
-/* Seletor de categoria dentro da listagem: precisa parecer texto até
-   receber atenção, senão a tabela vira um formulário. */
-.category-picker {
-  min-width: 0;
-  width: 100%;
-  max-width: 190px;
-  padding: 4px 6px;
-  font-size: 13px;
-  border-color: transparent;
-  background: transparent;
-}
-
-.category-picker:hover,
-.category-picker:focus-visible {
-  border-color: var(--border-strong);
-  background: var(--surface-1);
-}
-
-.category-picker.sem-categoria {
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-.tx-card-meta .category-picker {
-  max-width: 160px;
-  font-size: 12.5px;
-}
-
-@media (max-width: 720px) {
-  .category-picker {
-    min-height: 32px;
-    font-size: 14px;
-  }
-}
-
-/* Checkbox e rótulo longo: sem alinhar pelo topo, o texto que quebra em
-   duas linhas empurra o quadradinho para fora da linha dele. */
-.check-line {
+/* -------------------------------------------------------- cabeçalho */
+.page-head {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
-  font-size: 13.5px;
-  line-height: 1.4;
-  margin-bottom: 12px;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.page-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.page-subtitle {
+  margin: 5px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--text-3);
+  max-width: 70ch;
+}
+
+.section-label {
+  font-family: var(--font-d);
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-3);
+  margin: 26px 0 12px;
+}
+
+/* ----------------------------------------------------------- botões */
+button.primary,
+button.ghost {
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
-.check-line input[type='checkbox'] {
-  /* A regra global de campos impõe min-width de 150px, o que empurrava o
-     quadradinho para longe do texto. */
-  flex: none;
-  width: 16px;
-  height: 16px;
-  min-width: 0;
-  margin: 1px 0 0;
+button.primary {
+  padding: 10px 20px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--green);
+  color: #fff;
 }
 
-/* Aviso flutuante.
-   Em fluxo normal ele empurraria a lista para baixo, e no meio de uma
-   sequência de correções isso é sentido como a página se mexendo
-   sozinha. Fora do fluxo, nada desloca. */
-.toast {
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 24px;
-  z-index: 30;
-  max-width: min(520px, calc(100vw - 28px));
-  padding: 11px 16px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border-strong);
-  background: var(--surface-1);
-  color: var(--text-primary);
-  box-shadow: var(--shadow);
-  font-size: 13.5px;
-  line-height: 1.4;
-  animation: toast-in 160ms ease-out;
+button.primary:hover:not(:disabled) {
+  background: var(--green-h);
+  box-shadow: 0 4px 16px var(--green-glow);
 }
 
-@keyframes toast-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 8px);
-  }
+button.ghost {
+  padding: 9px 17px;
+  border: 1.5px solid var(--green);
+  border-radius: var(--r-md);
+  background: transparent;
+  color: var(--green);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .toast {
-    animation: none;
-  }
+button.ghost:hover:not(:disabled) {
+  background: var(--green-light);
 }
 
-@media (max-width: 720px) {
-  /* Acima da barra de navegação, que é fixa no rodapé. */
-  .toast {
-    bottom: calc(72px + env(safe-area-inset-bottom));
-  }
+button.ghost.ativo {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
 }
 
-/* -------------------------------------------------------------- ações em texto
-   A descrição da transação abre a edição. Vira botão para ganhar teclado
-   e leitor de tela, mas continua parecendo o texto que sempre foi — um
-   botão desenhado ali quebraria o alinhamento da tabela inteira. */
+button.ghost.perigo {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+button.ghost.perigo:hover:not(:disabled) {
+  background: var(--red-light);
+}
+
+button.primary:disabled,
+button.ghost:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button.ghost.icon {
+  padding: 6px 11px;
+  font-size: 0.95rem;
+  border-color: var(--border-strong);
+  color: var(--text-2);
+}
+
 button.link {
   font: inherit;
   padding: 0;
@@ -967,240 +424,93 @@ button.link {
   cursor: pointer;
 }
 
-/* Quando o botão de texto é uma ação, e não a própria descrição da linha,
-   ele precisa se anunciar como clicável. */
-button.link.acao {
-  color: var(--accent);
-}
-
 button.link:hover {
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-button.ghost.icon {
-  flex: none;
-  padding: 4px 9px;
-  font-size: 15px;
-  line-height: 1.2;
+button.link.acao {
+  color: var(--green);
+  font-weight: 500;
 }
 
-/* --------------------------------------------------------------- modal */
-dialog.modal {
-  width: min(460px, calc(100vw - 24px));
-  padding: 0;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  background: var(--surface-1);
-  color: var(--text-primary);
-  box-shadow: var(--shadow);
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
 }
 
-dialog.modal[open] {
+/* ----------------------------------------------------------- campos */
+.field {
   display: flex;
   flex-direction: column;
-  /* Cabeçalho e rodapé ficam parados e só o miolo rola: com o teclado do
-     celular aberto a caixa encolhe, e sem isso o botão de fechar seria o
-     primeiro a sair da tela. */
-  max-height: min(90dvh, calc(100% - 2em));
+  gap: 5px;
 }
 
-.modal-body {
-  overflow-y: auto;
-}
-
-dialog.modal::backdrop {
-  background: rgb(0 0 0 / 0.42);
-}
-
-.modal-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 16px 16px 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-.modal-head h2 {
-  margin: 0;
-  font-size: 16px;
+.field label {
+  font-size: 0.78rem;
   font-weight: 600;
-  line-height: 1.3;
+  color: var(--text-2);
 }
 
-.modal-sub {
-  margin: 4px 0 0;
-  font-size: 13px;
-  color: var(--text-secondary);
+input,
+select,
+textarea {
+  font: inherit;
+  font-size: 0.86rem;
+  padding: 9px 13px;
+  border: 1.5px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: var(--text);
+  min-width: 0;
+  transition: border-color 0.2s;
 }
 
-.modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  padding: 16px;
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--green);
 }
 
-.modal-valor {
-  font-family: var(--font-mono);
-  font-size: 24px;
-  font-weight: 600;
-}
-
-.modal-foot {
-  display: flex;
-  justify-content: flex-end;
-  padding: 12px 16px;
-  border-top: 1px solid var(--border);
-}
-
-.modal-body .field label {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.modal-body .check-line small {
-  display: block;
-  margin-top: 2px;
-  font-size: 12.5px;
-  color: var(--text-secondary);
-}
-
-/* Despesa/receita como par de botões em vez de um select: são só duas
-   opções, e a escolha atual precisa ficar visível sem abrir nada. */
-.segmented {
-  margin: 0;
-  padding: 0;
-  border: 0;
-}
-
-.segmented-options {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.segmented legend {
-  padding: 0 0 6px;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.segment {
-  flex: 1;
-  min-width: 120px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 9px 12px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-1);
-  font-size: 14px;
+select {
   cursor: pointer;
 }
 
-.segment.ativo {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
+input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  accent-color: var(--green);
+  cursor: pointer;
 }
 
-.segment input[type='radio'] {
-  flex: none;
-  width: 15px;
-  height: 15px;
-  min-width: 0;
-  margin: 0;
-}
-
-.segmented:disabled .segment {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-/* A confirmação nasce no lugar do botão que a pediu, com a consequência
-   escrita por extenso: "Confirmar" sozinho não diz quantas transações
-   somem, e apagar uma importação não tem volta. */
-.confirmacao {
+.filters {
   display: flex;
-  align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 16px;
 }
 
-.confirmacao-texto {
-  font-size: 13px;
-  color: var(--text-secondary);
+.filters .field {
+  min-width: 132px;
 }
 
-button.ghost.perigo {
-  border-color: var(--danger);
-  color: var(--danger);
-}
-
-/* Categoria nova escrita na hora: o seletor cobre o que já existe, este
-   campo cobre o que ainda não. Ficam juntos porque são a mesma decisão. */
-.nova-categoria {
+.check-line {
   display: flex;
-  gap: 8px;
-  margin-top: 8px;
+  align-items: flex-start;
+  gap: 9px;
+  font-size: 0.86rem;
+  color: var(--text-2);
+  cursor: pointer;
 }
 
-.nova-categoria input {
-  flex: 1;
-  min-width: 0;
-}
-
-.modal-body textarea {
-  width: 100%;
-  min-width: 0;
-  resize: vertical;
-  line-height: 1.45;
-}
-
-.modal-body .field label small {
-  margin-left: 6px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-/* Marca a transação que tem observação: sem isso a anotação só existe
-   para quem lembra de abrir aquela linha. */
-.tag-nota {
-  cursor: help;
-}
-
-/* A descrição abre a transação. O sublinhado pontilhado é o que anuncia
-   isso: sem ele a única pista era o cursor, e quem não passa o mouse por
-   cima — no celular, ninguém — nunca descobre que a linha abre. */
-td button.link,
-.tx-card button.link {
-  text-decoration: underline dotted;
-  text-decoration-color: var(--border-strong);
-  text-underline-offset: 3px;
-}
-
-td button.link:hover,
-.tx-card button.link:hover {
-  text-decoration: underline;
-  text-decoration-color: currentColor;
-}
-
-/* De onde a pessoa veio. Um filtro aplicado por outra tela, sem dizer
-   que foi, parece um bug de filtro preso. */
-.drill-chip {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-  padding: 9px 13px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
-  font-size: 13.5px;
+.check-line input[type='checkbox'] {
+  flex: none;
+  margin-top: 2px;
 }
 
 .linha-acoes {
@@ -1209,119 +519,459 @@ td button.link:hover,
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin: 10px 0 12px;
+  margin: 14px 0;
 }
 
-button.ghost.ativo {
-  border-color: var(--accent);
-  color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
+/* ------------------------------------------------------------ cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 22px;
+  box-shadow: var(--shadow);
 }
 
-/* Barra de ação da seleção. Fica no fluxo, logo acima da lista: fixa no
-   rodapé ela taparia as próprias linhas que se está marcando. */
-.barra-lote {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-  padding: 10px 13px;
-  border: 1px solid var(--accent);
-  border-radius: var(--radius-sm);
-  background: var(--surface-1);
-  font-size: 13.5px;
-}
-
-.col-check {
-  width: 34px;
-  padding-right: 0 !important;
-}
-
-.col-check input[type='checkbox'] {
-  min-width: 0;
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  vertical-align: middle;
-}
-
-tr.marcada > td {
-  background: var(--surface-2);
-}
-
-.tx-card.marcada {
-  border-color: var(--accent);
-}
-
-/* O cartão passou a ter três filhos no topo, e o `space-between` centrava
-   a descrição entre a caixa de seleção e o valor. Ela ocupa a sobra. */
-.tx-card-top .tx-desc {
-  flex: 1;
-  min-width: 0;
-  text-align: left;
-}
-
-.tx-check {
-  flex: none;
-  min-width: 0;
-  width: 18px;
-  height: 18px;
-  margin: 2px 10px 0 0;
-  align-self: flex-start;
-}
-
-/* Cabeçalho de card com um controle próprio à direita. */
 .card-head {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.card-title {
+  font-family: var(--font-d);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.card-sub {
+  margin: 3px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-3);
 }
 
 select.card-control {
-  min-width: 0;
-  padding: 4px 7px;
-  font-size: 13px;
-  color: var(--text-secondary);
-  border-color: var(--border);
-  background: transparent;
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text-2);
 }
 
-/* Aviso de plausibilidade: não é erro (nada falhou), mas pede conferência. */
-.notice.aviso {
-  border-color: var(--series-expense);
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
 }
 
-.lista-suspeitos {
-  margin: 10px 0 0;
-  padding-left: 18px;
+.wide-col {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
 }
 
-.lista-suspeitos li {
-  margin-bottom: 6px;
-  line-height: 1.45;
+/* -------------------------------------------------- cards de número */
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
-.lista-suspeitos .rec-meta {
-  display: block;
+.scard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s;
 }
 
-/* Patrimônio: dois números que se leem juntos — o que se tem e por
-   quantos meses isso dura. */
-.patrimonio-topo {
+.scard:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.scard-top {
   display: flex;
-  gap: 32px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.scard-label {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+/* Chip de ícone: o quadrado colorido dá ritmo à fileira e diferencia os
+   cards sem depender de ler o rótulo. */
+.scard-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+}
+
+.si-green {
+  background: var(--green-light);
+  color: var(--green);
+}
+.si-red {
+  background: var(--red-light);
+  color: var(--red);
+}
+.si-teal {
+  background: var(--teal-light);
+  color: var(--teal);
+}
+.si-gold {
+  background: var(--gold-light);
+  color: var(--gold);
+}
+.si-indigo {
+  background: var(--indigo-light);
+  color: var(--indigo);
+}
+
+.scard-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.scard-val {
+  font-family: var(--font-d);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.scard-val.green {
+  color: var(--green);
+}
+.scard-val.red {
+  color: var(--red);
+}
+
+.scard-change {
+  margin: 7px 0 0;
+  font-size: 0.77rem;
+  font-weight: 500;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  gap: 5px;
   flex-wrap: wrap;
+  line-height: 1.4;
+}
+
+.ch-up {
+  color: var(--red);
+  font-weight: 600;
+}
+.ch-dn {
+  color: var(--green);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------- transações */
+.tx-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tx-item {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-2);
+  border-radius: 11px;
+  background: var(--surface-2);
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.tx-item:hover {
+  background: var(--surface-3);
+}
+
+.tx-item.marcada {
+  border-color: var(--green);
+  background: var(--green-light);
+}
+
+.tx-dot {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  font-family: var(--font-d);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.tx-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tx-name {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tx-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 3px;
+  font-size: 0.76rem;
+  color: var(--text-3);
+}
+
+.tx-amount {
+  font-family: var(--font-d);
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.tx-amount.pos {
+  color: var(--green);
+}
+.tx-amount.neg {
+  color: var(--text);
+}
+
+.tx-right {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: none;
+}
+
+/* Larguras fixas nas duas colunas da direita. Sem isso o seletor de
+   categoria muda de largura conforme o nome, e os valores deixam de
+   formar coluna — que é a única coisa que a tabela fazia melhor. */
+.tx-right .category-picker {
+  width: 168px;
+}
+
+.tx-right .tx-amount {
+  min-width: 116px;
+}
+
+/* Pill de categoria: identifica sem competir com a descrição. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.pill-green {
+  background: var(--green-light);
+  color: var(--green);
+}
+.pill-teal {
+  background: var(--teal-light);
+  color: var(--teal);
+}
+.pill-gold {
+  background: var(--gold-light);
+  color: var(--gold);
+}
+.pill-indigo {
+  background: var(--indigo-light);
+  color: var(--indigo);
+}
+.pill-mudo {
+  background: var(--border-2);
+  color: var(--text-3);
+  border: 1px solid var(--border);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: var(--border-2);
+  border: 1px solid var(--border);
+  color: var(--text-3);
+}
+
+.tag-nota {
+  cursor: help;
+}
+
+select.category-picker {
+  padding: 4px 9px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-2);
+  max-width: 178px;
+}
+
+select.category-picker.sem-categoria {
+  color: var(--text-3);
+  font-style: italic;
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------- gráficos */
+.chart-wrap {
+  position: relative;
+  width: 100%;
+}
+
+.chart-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+  color: var(--text-2);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.donut-grid {
+  display: grid;
+  grid-template-columns: 168px 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.donut-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
+
+.donut-legend .legend-item {
+  font-size: 0.8rem;
+  width: 100%;
+}
+
+.legend-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-2);
+  text-align: left;
+}
+
+.legend-pct {
+  font-family: var(--font-d);
+  font-weight: 600;
+  font-size: 0.78rem;
+  color: var(--text);
+  flex: none;
+}
+
+/* ----------------------------------------------------------- listas */
+.rec-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border-2);
+}
+
+.rec-row:last-child {
+  border-bottom: 0;
+}
+
+.rec-label {
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rec-meta {
+  grid-column: 1 / -1;
+  font-size: 0.75rem;
+  color: var(--text-3);
+}
+
+.cat-value {
+  font-family: var(--font-d);
+  font-size: 0.87rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.delta {
+  font-family: var(--font-d);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.delta-up {
+  color: var(--red);
+}
+.delta-dn {
+  color: var(--green);
 }
 
 .posicao {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 2px 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border-2);
 }
 
 .posicao .rec-meta {
@@ -1334,10 +984,696 @@ select.card-control {
   align-items: flex-end;
   gap: 10px;
   flex-wrap: wrap;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
 .informar-saldo .field {
   flex: 1;
   min-width: 140px;
+}
+
+.patrimonio-topo {
+  display: flex;
+  gap: 36px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.kpi-label {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.kpi-value {
+  font-family: var(--font-d);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-top: 2px;
+}
+
+.kpi-hint {
+  margin: 5px 0 0;
+  font-size: 0.77rem;
+  color: var(--text-3);
+}
+
+/* ---------------------------------------------------------- estados */
+.notice {
+  padding: 13px 15px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: 0.86rem;
+  line-height: 1.5;
+  margin-bottom: 14px;
+}
+
+.notice.error {
+  border-color: var(--red);
+  background: var(--red-light);
+  color: var(--text);
+}
+
+.notice.aviso {
+  border-color: var(--gold);
+  background: var(--gold-light);
+}
+
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 0.87rem;
+  line-height: 1.55;
+  color: var(--text-3);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.skeleton {
+  display: block;
+  height: 14px;
+  border-radius: 7px;
+  background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2));
+  background-size: 200% 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+.badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 6px;
+  border-radius: 20px;
+  background: var(--green);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* Aviso flutuante: em fluxo ele empurraria a lista para baixo, e no meio
+   de uma sequência de correções isso é sentido como a página se mexendo
+   sozinha. */
+.toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 900;
+  max-width: min(360px, calc(100vw - 32px));
+  padding: 13px 18px;
+  border-radius: var(--r-md);
+  background: var(--nav-bg);
+  color: #fff;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  box-shadow: var(--shadow-md);
+  animation: toast-in 0.25s ease-out;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+.drill-chip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 10px 15px;
+  border: 1px solid var(--green);
+  border-radius: var(--r-md);
+  background: var(--green-light);
+  font-size: 0.85rem;
+}
+
+.barra-lote {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 11px 15px;
+  border: 1.5px solid var(--green);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font-size: 0.85rem;
+  box-shadow: var(--shadow);
+}
+
+.confirmacao {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.confirmacao-texto {
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+
+/* -------------------------------------------------------- importação */
+.dropzone {
+  padding: 34px 20px;
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dropzone:hover,
+.dropzone.dragging {
+  border-color: var(--green);
+  background: var(--green-light);
+  color: var(--green);
+}
+
+.nova-categoria {
+  display: flex;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.nova-categoria input {
+  flex: 1;
+  min-width: 0;
+}
+
+.lista-suspeitos {
+  margin: 10px 0 0;
+  padding-left: 18px;
+}
+
+.lista-suspeitos li {
+  margin-bottom: 7px;
+  line-height: 1.45;
+}
+
+.lista-suspeitos .rec-meta {
+  display: block;
+}
+
+/* ----------------------------------------------------------- tabelas */
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+  padding: 9px 12px;
+  border-bottom: 1.5px solid var(--border);
+  color: var(--text-3);
+  white-space: nowrap;
+}
+
+td {
+  font-size: 0.84rem;
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--border-2);
+}
+
+tr:last-child td {
+  border-bottom: 0;
+}
+
+tbody tr:hover td {
+  background: var(--surface-2);
+}
+
+th.num,
+td.num {
+  text-align: right;
+  font-family: var(--font-d);
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------- modal */
+dialog.modal {
+  width: min(460px, calc(100vw - 24px));
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.28);
+}
+
+dialog.modal[open] {
+  display: flex;
+  flex-direction: column;
+  /* Com o teclado do celular aberto a caixa encolhe; sem isto o botão de
+     fechar seria o primeiro a sair da tela. */
+  max-height: min(90dvh, calc(100% - 2em));
+  animation: modal-in 0.25s ease;
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog.modal[open] {
+    animation: none;
+  }
+}
+
+dialog.modal::backdrop {
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(3px);
+}
+
+.modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 24px 24px 16px;
+}
+
+.modal-head h2 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.modal-sub {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  color: var(--text-3);
+}
+
+.modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 24px 20px;
+  overflow-y: auto;
+}
+
+.modal-valor {
+  font-family: var(--font-d);
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.modal-valor.amount-in {
+  color: var(--green);
+}
+
+.modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.modal-body textarea {
+  width: 100%;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.modal-body .field label small {
+  margin-left: 6px;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.modal-body .check-line small {
+  display: block;
+  margin-top: 3px;
+  font-size: 0.76rem;
+  color: var(--text-3);
+}
+
+.segmented {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.segmented legend {
+  padding: 0 0 7px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.segmented-options {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.segment {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  font-size: 0.86rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.segment.ativo {
+  border-color: var(--green);
+  background: var(--green-light);
+  color: var(--green);
+  font-weight: 600;
+}
+
+.segment input[type='radio'] {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  accent-color: var(--green);
+  margin: 0;
+}
+
+.segmented:disabled .segment {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ------------------------------------------------- porta de entrada */
+.gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.gate-card {
+  width: min(400px, 100%);
+}
+
+/* -------------------------------------------------------- responsivo */
+@media (max-width: 1100px) {
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .wide-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  main {
+    padding: 20px 16px calc(78px + env(safe-area-inset-bottom));
+  }
+
+  .topbar {
+    padding: 0 16px;
+  }
+
+  /* Dois por linha, e não um: quatro cards empilhados no celular
+     empurram tudo o mais para 1.100px abaixo do topo. */
+  .kpi-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .scard {
+    padding: 14px;
+  }
+
+  .scard-top {
+    margin-bottom: 10px;
+  }
+
+  .scard-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+  }
+
+  .scard-icon svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .scard-val {
+    font-size: 1.12rem;
+  }
+
+  .scard-label {
+    font-size: 0.76rem;
+  }
+
+  .scard-change {
+    font-size: 0.72rem;
+  }
+
+  .page-title {
+    font-size: 1.35rem;
+  }
+
+  .card {
+    padding: 18px;
+    border-radius: var(--r-md);
+  }
+
+  .scard {
+    padding: 16px;
+    border-radius: var(--r-md);
+  }
+
+  .donut-grid {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .donut-legend {
+    width: 100%;
+  }
+
+  .toast {
+    left: 16px;
+    right: 16px;
+    bottom: calc(78px + env(safe-area-inset-bottom));
+    max-width: none;
+  }
+
+  .patrimonio-topo {
+    gap: 22px;
+  }
+
+  /* A linha da transação aperta muito a 390px: o nome ganha duas linhas,
+     o valor larga a largura fixa e o seletor de categoria desce para o
+     modal — que é onde ele cabe. */
+  /* Alinhado ao topo: com a meta quebrando em duas linhas, o valor
+     centrado flutuava solto no meio da altura da linha. */
+  .tx-item {
+    align-items: flex-start;
+    gap: 10px;
+    padding: 11px 12px;
+  }
+
+  .tx-item input[type='checkbox'],
+  .tx-dot,
+  .tx-right {
+    margin-top: 1px;
+  }
+
+  .tx-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    font-size: 0.76rem;
+  }
+
+  .tx-name {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .tx-right .tx-amount {
+    min-width: 0;
+    font-size: 0.9rem;
+  }
+
+  .filters .field {
+    min-width: 0;
+  }
+}
+
+/* ------------------------------------------------ gráfico de barras */
+.chart-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.grid-line {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.axis-label {
+  font-size: 10px;
+  font-weight: 500;
+  fill: var(--text-3);
+}
+
+/* Área invisível de captura do tooltip: cobre a coluna inteira do mês,
+   porque mirar numa barra de 8px é exigir precisão que ninguém tem. */
+.hit {
+  fill: transparent;
+  cursor: default;
+}
+
+.hit:hover {
+  fill: var(--border-2);
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 20;
+  pointer-events: none;
+  padding: 9px 12px;
+  border-radius: var(--r-sm);
+  background: var(--nav-bg);
+  color: #fff;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  box-shadow: var(--shadow-md);
+  white-space: nowrap;
+}
+
+.tooltip-title {
+  font-family: var(--font-d);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+/* --------------------------------------------- barra fixo/variável */
+.split-bar {
+  display: flex;
+  height: 9px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--gold);
+}
+
+.split-fixo {
+  display: block;
+  height: 100%;
+  background: var(--teal);
+}
+
+.split-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--text-2);
+}
+
+.split-legend b {
+  font-family: var(--font-d);
+  color: var(--text);
+}
+
+/* ------------------------------------------------------- diversos */
+.filter-toggle {
+  margin-bottom: 12px;
+}
+
+.filters--upload {
+  align-items: flex-end;
+  margin-bottom: 0;
+}
+
+.export-text {
+  width: 100%;
+  min-height: 190px;
+  font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.amount-in {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.amount-out {
+  color: var(--text);
+  font-weight: 600;
 }

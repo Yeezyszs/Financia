@@ -3,7 +3,6 @@ import { ApiError, api } from '../api/client.js';
 import type { Account, Drill, ImportRecord, ImportResult } from '../api/types.js';
 import { date, dateTime } from '../format.js';
 import { NewAccountForm } from '../components/NewAccountForm.js';
-import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 
 type Acao = 'flip' | 'delete';
 
@@ -42,7 +41,6 @@ export function History({
   const [ocupado, setOcupado] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const isMobile = useMediaQuery(MOBILE);
 
   const refresh = useCallback(() => {
     api
@@ -218,11 +216,15 @@ export function History({
         </div>
       ) : null}
 
-      <h1 className="page-title">Histórico de importações</h1>
-      <p className="page-subtitle">
-        Suba o CSV exportado do app do banco. Linhas já importadas são descartadas automaticamente,
-        então períodos sobrepostos não viram transação duplicada.
-      </p>
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">Histórico de importações</h1>
+          <p className="page-subtitle">
+            Suba o CSV exportado do app do banco. Linhas já importadas são descartadas
+            automaticamente, então períodos sobrepostos não viram transação duplicada.
+          </p>
+        </div>
+      </div>
 
       <div className="card stack" style={{ marginBottom: 20 }}>
         {accounts.length === 0 ? (
@@ -363,111 +365,70 @@ export function History({
         )}
       </div>
 
-      {isMobile ? (
-        <div className="card-list">
+      <div className="card">
+        <div className="card-head">
+          <div>
+            <h2 className="card-title">Arquivos importados</h2>
+            <p className="card-sub">
+              {records.length === 0
+                ? 'Nada importado ainda'
+                : `${records.length} ${records.length === 1 ? 'importação' : 'importações'}`}
+            </p>
+          </div>
+        </div>
+
+        <div className="tx-list">
           {records.length === 0 ? (
-            <div className="card">
-              <div className="empty">Nenhuma importação ainda.</div>
-            </div>
+            <div className="empty">Nenhuma importação ainda.</div>
           ) : (
-            records.map((record) => (
-              <article className="tx-card" key={record.id}>
-                <div className="tx-card-top">
-                  <span className="tx-desc">{record.filename}</span>
-                  {record.status === 'failed' ? (
-                    <span className="tag" style={{ color: 'var(--danger)' }}>
-                      falhou
-                    </span>
-                  ) : (
-                    <span className="num">
-                      <b>{record.rowsImported}</b> importadas
-                    </span>
-                  )}
-                </div>
-                <div className="tx-card-meta">
-                  <span>{dateTime(record.createdAt)}</span>
-                  <span aria-hidden="true">·</span>
-                  <span>{accountName.get(record.accountId) ?? '—'}</span>
-                  {record.periodStart ? (
-                    <>
+            records.map((record) => {
+              const falhou = record.status === 'failed';
+              return (
+                <article className="tx-item" key={record.id}>
+                  <span
+                    className="tx-dot"
+                    style={{
+                      background: falhou ? 'var(--red-light)' : 'var(--green-light)',
+                      color: falhou ? 'var(--red)' : 'var(--green)',
+                    }}
+                    aria-hidden="true"
+                  >
+                    {falhou ? '!' : record.rowsImported}
+                  </span>
+
+                  <div className="tx-info">
+                    <span className="tx-name">{record.filename}</span>
+                    <div className="tx-meta">
+                      <span>{dateTime(record.createdAt)}</span>
                       <span aria-hidden="true">·</span>
-                      <span>
-                        {date(record.periodStart)} a {date(record.periodEnd ?? record.periodStart)}
-                      </span>
-                    </>
-                  ) : null}
-                  {record.rowsDuplicated > 0 ? (
-                    <span className="tag">{record.rowsDuplicated} já existiam</span>
-                  ) : null}
-                </div>
-                <div className="tx-card-meta">{acoes(record)}</div>
-                {record.errorMessage ? (
-                  <div className="tx-card-meta" style={{ color: 'var(--danger)' }}>
-                    {record.errorMessage}
+                      <span>{accountName.get(record.accountId) ?? '—'}</span>
+                      {record.periodStart ? (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span>
+                            {date(record.periodStart)} a{' '}
+                            {date(record.periodEnd ?? record.periodStart)}
+                          </span>
+                        </>
+                      ) : null}
+                      {record.rowsDuplicated > 0 ? (
+                        <span className="tag">{record.rowsDuplicated} já existiam</span>
+                      ) : null}
+                      {falhou ? <span className="pill pill-mudo">falhou</span> : null}
+                    </div>
+                    {record.errorMessage ? (
+                      <div className="tx-meta" style={{ color: 'var(--red)' }}>
+                        {record.errorMessage}
+                      </div>
+                    ) : null}
+                    <div className="tx-meta">{acoes(record)}</div>
                   </div>
-                ) : null}
-              </article>
-            ))
+                </article>
+              );
+            })
           )}
         </div>
-      ) : (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Quando</th>
-                <th>Arquivo</th>
-                <th>Conta</th>
-                <th>Período</th>
-                <th className="num">Importadas</th>
-                <th className="num">Duplicadas</th>
-                <th>Status</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {records.length === 0 ? (
-                <tr>
-                  <td colSpan={8}>
-                    <div className="empty">Nenhuma importação ainda.</div>
-                  </td>
-                </tr>
-              ) : (
-                records.map((record) => (
-                  <tr key={record.id}>
-                    <td style={{ whiteSpace: 'nowrap' }}>{dateTime(record.createdAt)}</td>
-                    <td>{record.filename}</td>
-                    <td>{accountName.get(record.accountId) ?? '—'}</td>
-                    <td style={{ whiteSpace: 'nowrap' }}>
-                      {record.periodStart
-                        ? `${date(record.periodStart)} – ${date(record.periodEnd ?? record.periodStart)}`
-                        : '—'}
-                    </td>
-                    <td className="num">{record.rowsImported}</td>
-                    <td className="num">{record.rowsDuplicated}</td>
-                    <td>
-                      {record.status === 'failed' ? (
-                        <span
-                          className="tag"
-                          title={record.errorMessage ?? ''}
-                          style={{ color: 'var(--danger)' }}
-                        >
-                          falhou
-                        </span>
-                      ) : (
-                        <span className="tag">
-                          {record.status === 'completed' ? 'ok' : record.status}
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{acoes(record)}</td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+      </div>
     </>
   );
 }

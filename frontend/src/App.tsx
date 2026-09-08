@@ -115,7 +115,12 @@ export function App(): ReactNode {
   return (
     <div className="app">
       <header className="topbar">
-        <span className="brand">Financia</span>
+        <span className="brand">
+          <span className="brand-mark" aria-hidden="true">
+            F
+          </span>
+          Financia
+        </span>
 
         {/* No celular a navegação vai para a barra fixa do rodapé, ao
             alcance do polegar; no topo caberiam só dois rótulos e o
@@ -134,9 +139,19 @@ export function App(): ReactNode {
           </nav>
         )}
 
-        <button className="ghost" onClick={() => void supabase.auth.signOut()}>
-          Sair
-        </button>
+        <div className="nav-right">
+          {isMobile ? null : (
+            <span className="nav-user">
+              <span className="nav-avatar" aria-hidden="true">
+                {(session.user.email ?? '?').slice(0, 2)}
+              </span>
+              {session.user.email}
+            </span>
+          )}
+          <button className="btn-logout" onClick={() => void supabase.auth.signOut()}>
+            Sair
+          </button>
+        </div>
       </header>
 
       <main>

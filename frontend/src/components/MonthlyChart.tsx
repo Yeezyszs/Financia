@@ -74,18 +74,13 @@ export function MonthlyChart({
 
   return (
     <div>
-      <div className="chart-header">
-        <h2 className="card-title" style={{ margin: 0 }}>
-          Evolução mensal · {year}
-        </h2>
-        <div className="legend">
-          <span>
-            <i className="swatch" style={{ background: 'var(--series-income)' }} /> Receitas
-          </span>
-          <span>
-            <i className="swatch" style={{ background: 'var(--series-expense)' }} /> Despesas
-          </span>
-        </div>
+      <div className="chart-legend" style={{ marginBottom: 14 }}>
+        <span className="legend-item">
+          <i className="legend-dot" style={{ background: 'var(--series-income)' }} /> Receitas
+        </span>
+        <span className="legend-item">
+          <i className="legend-dot" style={{ background: 'var(--series-expense)' }} /> Despesas
+        </span>
       </div>
 
       {hasMovement ? (

@@ -1,7 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api } from '../api/client.js';
 import type { Drill, NetWorth, Overview as OverviewData, Snapshot } from '../api/types.js';
-import { CategoryChart } from '../components/CategoryChart.js';
+import { DonutChart } from '../components/DonutChart.js';
+import { Kpi, type Variacao } from '../components/Kpi.js';
 import { MonthlyChart } from '../components/MonthlyChart.js';
 import { RecurringCard } from '../components/RecurringCard.js';
 import { TrendList } from '../components/TrendList.js';
@@ -111,6 +112,31 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
 
   const balancePositive = (data?.balanceCents ?? 0) >= 0;
 
+  /**
+   * Variação contra o mês anterior. Sai da série do ano, que já veio
+   * junto para o gráfico — pedir de novo ao servidor seria uma chamada a
+   * mais para um dado que já está na mão.
+   */
+  const variacao = useMemo((): { income: Variacao | null; expense: Variacao | null } | null => {
+    const serie = data?.monthly ?? [];
+    const atual = `${year}-${String(month).padStart(2, '0')}`;
+    const anteriorMes = monthsBefore(year, month, 1).slice(0, 7);
+
+    const hoje = serie.find((m) => m.month === atual);
+    const antes = serie.find((m) => m.month === anteriorMes);
+    if (!hoje || !antes) return null;
+
+    // Sem base não há variação a declarar: "+100%" só diria que o mês
+    // passado não teve movimento nenhum naquela linha.
+    const varia = (agora: number, base: number, subirEBom: boolean): Variacao | null =>
+      base > 0 ? { percent: Math.round(((agora - base) / base) * 100), subirEBom } : null;
+
+    return {
+      income: varia(hoje.incomeCents, antes.incomeCents, true),
+      expense: varia(hoje.expenseCents, antes.expenseCents, false),
+    };
+  }, [data, year, month]);
+
   // Quanto da renda não virou consumo. Vem pronto do servidor porque a
   // conta depende de o que é aporte e o que é gasto — que é justamente a
   // distinção que esta versão passou a fazer.
@@ -129,121 +155,130 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
 
   return (
     <>
-      <h1 className="page-title">Visão geral</h1>
-      <p className="page-subtitle">
-        Transferências entre suas contas — como o pagamento da fatura — ficam de fora dos totais. E
-        aporte em investimento não é despesa: sai da conta, mas vira patrimônio.
-      </p>
-
-      {/* Só o mês fica aqui em cima, porque é o único controle que
-          governa a página toda. Ano e janela de análise moram no
-          cabeçalho do card que cada um controla — juntos os três
-          pareciam governar tudo, e nenhum governava. */}
-      <div className="filters filters--compact">
-        <div className="field">
-          <label htmlFor="mes">Mês de referência</label>
-          <select id="mes" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
-            {MONTHS.map((name, index) => (
-              <option key={name} value={index + 1}>
-                {name}
-              </option>
-            ))}
-          </select>
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">Visão geral</h1>
+          <p className="page-subtitle">
+            Transferências entre suas contas — como o pagamento da fatura — ficam de fora dos
+            totais. E aporte em investimento não é despesa: sai da conta, mas vira patrimônio.
+          </p>
         </div>
-        <div className="field">
-          <label htmlFor="ano">Ano</label>
-          <select id="ano" value={year} onChange={(e) => setYear(Number(e.target.value))}>
-            {Array.from({ length: 5 }, (_, i) => today.getFullYear() - i).map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
+        <div className="filters" style={{ marginBottom: 0 }}>
+          <div className="field">
+            <label htmlFor="mes">Mês de referência</label>
+            <select id="mes" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
+              {MONTHS.map((name, index) => (
+                <option key={name} value={index + 1}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label htmlFor="ano">Ano</label>
+            <select id="ano" value={year} onChange={(e) => setYear(Number(e.target.value))}>
+              {Array.from({ length: 5 }, (_, i) => today.getFullYear() - i).map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
       {error ? <div className="notice error">{error}</div> : null}
 
       <div className="kpi-row">
-        <div className="card">
-          <p className="kpi-label">
-            <i className="swatch" style={{ background: 'var(--series-income)' }} /> Receitas
-          </p>
-          <div className="kpi-value">
-            {loading ? (
-              <span className="skeleton" style={{ display: 'block', width: 120 }} />
-            ) : (
-              money(data?.incomeCents ?? 0)
-            )}
-          </div>
-        </div>
-
-        <div className="card">
-          <p className="kpi-label">
-            <i className="swatch" style={{ background: 'var(--series-expense)' }} /> Despesas
-          </p>
-          <div className="kpi-value">
-            {loading ? (
-              <span className="skeleton" style={{ display: 'block', width: 120 }} />
-            ) : (
-              money(data?.expenseCents ?? 0)
-            )}
-          </div>
-          <p className="kpi-hint">
-            {(data?.expenseOnCardCents ?? 0) > 0
+        <Kpi
+          rotulo="Receitas"
+          valor={data?.incomeCents ?? 0}
+          cor="green"
+          tom="si-green"
+          icone={<polyline points="23 6 13.5 15.5 8.5 10.5 1 18" />}
+          carregando={loading}
+          variacao={variacao?.income ?? null}
+        />
+        <Kpi
+          rotulo="Despesas"
+          valor={data?.expenseCents ?? 0}
+          cor="red"
+          tom="si-red"
+          icone={<polyline points="23 18 13.5 8.5 8.5 13.5 1 6" />}
+          carregando={loading}
+          variacao={variacao?.expense ?? null}
+          nota={
+            (data?.expenseOnCardCents ?? 0) > 0
               ? `${money(data?.expenseOnCardCents ?? 0)} ainda vai sair na fatura`
-              : 'Só consumo — aporte não entra aqui'}
-          </p>
-        </div>
-
-        <div className="card">
-          <p className="kpi-label">Guardado</p>
-          <div className="kpi-value">
-            {loading ? (
-              <span className="skeleton" style={{ display: 'block', width: 120 }} />
-            ) : (
-              money(data?.savingCents ?? 0)
-            )}
-          </div>
-          <p className="kpi-hint">Aporte em investimento, líquido de resgates</p>
-        </div>
-
-        <div className="card">
-          <p className="kpi-label">Sobrou na conta</p>
-          <div
-            className="kpi-value"
-            style={{ color: balancePositive ? undefined : 'var(--danger)' }}
-          >
-            {loading ? (
-              <span className="skeleton" style={{ display: 'block', width: 120 }} />
-            ) : (
-              money(data?.balanceCents ?? 0)
-            )}
-          </div>
-          <p className="kpi-hint">
-            {taxaPoupanca === null
+              : 'Só consumo — aporte não entra aqui'
+          }
+        />
+        <Kpi
+          rotulo="Guardado"
+          valor={data?.savingCents ?? 0}
+          tom="si-gold"
+          icone={
+            <>
+              <circle cx="12" cy="12" r="10" />
+              <circle cx="12" cy="12" r="6" />
+              <circle cx="12" cy="12" r="2" />
+            </>
+          }
+          carregando={loading}
+          nota="Aporte em investimento, líquido de resgates"
+        />
+        <Kpi
+          rotulo="Sobrou na conta"
+          valor={data?.balanceCents ?? 0}
+          {...(balancePositive ? {} : { cor: 'red' as const })}
+          tom="si-teal"
+          icone={
+            <>
+              <rect x="2" y="5" width="20" height="14" rx="3" />
+              <path d="M2 10h20" />
+            </>
+          }
+          carregando={loading}
+          nota={
+            taxaPoupanca === null
               ? balancePositive
                 ? 'Receitas maiores que despesas'
                 : 'Despesas maiores que receitas'
-              : `Guardou ${taxaPoupanca}% da renda, contando o aporte`}
-          </p>
-        </div>
+              : `Guardou ${taxaPoupanca}% da renda, contando o aporte`
+          }
+        />
       </div>
 
-      <div className="card" style={{ marginBottom: 14 }}>
-        <h2 className="card-title">Patrimônio</h2>
+      <div className="card" style={{ marginBottom: 18 }}>
+        <div className="card-head">
+          <div>
+            <h2 className="card-title">Patrimônio</h2>
+            <p className="card-sub">O que você tem menos o que já deve</p>
+          </div>
+        </div>
         <NetWorthCard data={netWorth} onChanged={() => setVersaoSaldo((v) => v + 1)} />
       </div>
 
-      <div className="chart-grid">
+      <div className="two-col">
         <div className="card">
+          <div className="card-head">
+            <div>
+              <h2 className="card-title">Evolução mensal</h2>
+              <p className="card-sub">Receitas contra despesas</p>
+            </div>
+          </div>
           {/* Doze meses em 330px deixam os rótulos ilegíveis: no celular
               mostramos os seis últimos, que é a janela que interessa. */}
           <MonthlyChart data={data?.monthly ?? []} year={year} months={isMobile ? 6 : 12} />
         </div>
 
         <div className="card">
-          <h2 className="card-title">Despesas por categoria · {MONTHS[month - 1]}</h2>
+          <div className="card-head">
+            <div>
+              <h2 className="card-title">Despesas por categoria</h2>
+              <p className="card-sub">Distribuição de {MONTHS[month - 1]}</p>
+            </div>
+          </div>
           {loading ? (
             <div className="stack">
               {[0, 1, 2, 3].map((i) => (
@@ -251,12 +286,12 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
               ))}
             </div>
           ) : (
-            <CategoryChart data={data?.expensesByCategory ?? []} onDrill={drillDoMes} />
+            <DonutChart data={data?.expensesByCategory ?? []} onDrill={drillDoMes} />
           )}
         </div>
       </div>
 
-      <div className="chart-grid" style={{ marginTop: 14 }}>
+      <div className="two-col">
         <div className="card">
           <div className="card-head">
             <h2 className="card-title">Gastos recorrentes</h2>
@@ -313,7 +348,7 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 14 }}>
+      <div className="card">
         <h2 className="card-title">Analisar com o Claude</h2>
         <p className="page-subtitle" style={{ marginBottom: 14 }}>
           {janela > 1

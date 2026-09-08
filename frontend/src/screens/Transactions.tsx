@@ -8,6 +8,12 @@ import { TransactionModal } from '../components/TransactionModal.js';
 
 const PAGE_SIZE = 50;
 
+/** Primeira letra útil da descrição, para o quadradinho da linha. */
+function inicial(description: string): string {
+  const letra = description.replace(/[^\p{L}\p{N}]/gu, '').charAt(0);
+  return (letra || '?').toUpperCase();
+}
+
 export function Transactions({
   accounts,
   categories,
@@ -275,11 +281,15 @@ export function Transactions({
 
   return (
     <>
-      <h1 className="page-title">Transações</h1>
-      <p className="page-subtitle">
-        {total} {total === 1 ? 'transação' : 'transações'} no filtro atual. Clique na descrição para
-        escrever uma categoria ou uma observação.
-      </p>
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">Transações</h1>
+          <p className="page-subtitle">
+            {total} {total === 1 ? 'transação' : 'transações'} no filtro atual. Clique na descrição
+            para escrever uma categoria ou uma observação.
+          </p>
+        </div>
+      </div>
 
       {drill ? (
         <div className="drill-chip">
@@ -396,10 +406,35 @@ export function Transactions({
       {error ? <div className="notice error">{error}</div> : null}
 
       <div className="linha-acoes">
-        <label className="check-line" style={{ margin: 0 }}>
-          <input type="checkbox" checked={lembrar} onChange={(e) => setLembrar(e.target.checked)} />
-          <span>Lembrar minha escolha para o mesmo estabelecimento</span>
-        </label>
+        <div className="row" style={{ gap: 18 }}>
+          <label className="check-line" style={{ margin: 0 }}>
+            <input
+              type="checkbox"
+              aria-label="Selecionar todas desta página"
+              checked={items.length > 0 && selecionados.size === items.length}
+              ref={(el) => {
+                // Meio-termo: algumas marcadas, não todas.
+                if (el)
+                  el.indeterminate = selecionados.size > 0 && selecionados.size < items.length;
+              }}
+              onChange={(e) =>
+                setSelecionados(
+                  e.target.checked ? new Set(items.map((item) => item.id)) : new Set(),
+                )
+              }
+            />
+            <span>Selecionar tudo</span>
+          </label>
+
+          <label className="check-line" style={{ margin: 0 }}>
+            <input
+              type="checkbox"
+              checked={lembrar}
+              onChange={(e) => setLembrar(e.target.checked)}
+            />
+            <span>Lembrar minha escolha para o mesmo estabelecimento</span>
+          </label>
+        </div>
 
         {/* É o modo de trabalho de depois de cada importação, então é um
             botão e não mais uma linha escondida dentro dos filtros. */}
@@ -446,164 +481,72 @@ export function Transactions({
         </div>
       ) : null}
 
-      {isMobile ? (
-        <div className="card-list">
+      <div className="card">
+        <div className="tx-list">
           {loading && items.length === 0 ? (
-            <div className="card stack">
-              {[0, 1, 2, 3, 4].map((i) => (
-                <span key={i} className="skeleton" />
+            <div className="stack">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <span key={i} className="skeleton" style={{ height: 62, borderRadius: 11 }} />
               ))}
             </div>
           ) : items.length === 0 ? (
-            <div className="card">
-              <div className="empty">
-                Nada aqui. Ajuste os filtros ou importe um extrato em Histórico.
-              </div>
+            <div className="empty">
+              Nada aqui. Ajuste os filtros ou importe um extrato em Histórico.
             </div>
           ) : (
-            items.map((transaction) => (
-              <article
-                className={selecionados.has(transaction.id) ? 'tx-card marcada' : 'tx-card'}
-                key={transaction.id}
-              >
-                <div className="tx-card-top">
+            items.map((transaction) => {
+              const entrada = transaction.amountCents > 0;
+              return (
+                <article
+                  className={selecionados.has(transaction.id) ? 'tx-item marcada' : 'tx-item'}
+                  key={transaction.id}
+                >
                   <input
                     type="checkbox"
-                    className="tx-check"
                     aria-label={`Selecionar ${transaction.description}`}
                     checked={selecionados.has(transaction.id)}
                     onChange={() => alternar(transaction.id)}
                   />
-                  <button
-                    className="link tx-desc"
-                    onClick={() => {
-                      setFocoNaCategoria(false);
-                      setEditandoId(transaction.id);
-                    }}
-                  >
-                    {transaction.description}
-                  </button>
+
+                  {/* A inicial do estabelecimento no lugar de um ícone
+                      genérico: ela identifica a linha de relance e não
+                      exige um mapa de categoria para ícone. */}
                   <span
-                    className={transaction.amountCents > 0 ? 'amount-in num' : 'amount-out num'}
+                    className="tx-dot"
+                    style={{
+                      background: entrada ? 'var(--green-light)' : 'var(--border-2)',
+                      color: entrada ? 'var(--green)' : 'var(--text-3)',
+                    }}
+                    aria-hidden="true"
                   >
-                    {money(transaction.amountCents)}
+                    {inicial(transaction.description)}
                   </span>
-                </div>
-                <div className="tx-card-meta">
-                  <span>{date(transaction.occurredOn)}</span>
-                  <span aria-hidden="true">·</span>
-                  <span>{accountName.get(transaction.accountId) ?? '—'}</span>
-                  <CategoryPicker
-                    value={transaction.categoryId}
-                    categories={categoriasDisponiveis}
-                    onChange={(categoryId) => categorizar(transaction.id, categoryId)}
-                    onEscrever={() => {
-                      setFocoNaCategoria(true);
-                      setEditandoId(transaction.id);
-                    }}
-                  />
-                  {transaction.isTransfer ? <span className="tag">transferência</span> : null}
-                  {transaction.notes ? (
-                    <span className="tag tag-nota" title={transaction.notes}>
-                      nota
-                    </span>
-                  ) : null}
-                </div>
-              </article>
-            ))
-          )}
-        </div>
-      ) : (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th className="col-check">
-                  <input
-                    type="checkbox"
-                    aria-label="Selecionar todas desta página"
-                    checked={items.length > 0 && selecionados.size === items.length}
-                    ref={(el) => {
-                      // Meio-termo: algumas marcadas, não todas.
-                      if (el)
-                        el.indeterminate =
-                          selecionados.size > 0 && selecionados.size < items.length;
-                    }}
-                    onChange={(e) =>
-                      setSelecionados(
-                        e.target.checked ? new Set(items.map((item) => item.id)) : new Set(),
-                      )
-                    }
-                  />
-                </th>
-                <th>Data</th>
-                <th>Descrição</th>
-                <th>Conta</th>
-                <th>Categoria</th>
-                <th className="num">Valor</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan={6}>
-                    <div className="stack" style={{ padding: '8px 0' }}>
-                      {[0, 1, 2, 3, 4].map((i) => (
-                        <span key={i} className="skeleton" />
-                      ))}
-                    </div>
-                  </td>
-                </tr>
-              ) : items.length === 0 ? (
-                <tr>
-                  <td colSpan={6}>
-                    <div className="empty">
-                      Nada aqui. Ajuste os filtros ou importe um extrato em Histórico.
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                items.map((transaction) => (
-                  <tr
-                    key={transaction.id}
-                    className={selecionados.has(transaction.id) ? 'marcada' : undefined}
-                  >
-                    <td className="col-check">
-                      <input
-                        type="checkbox"
-                        aria-label={`Selecionar ${transaction.description}`}
-                        checked={selecionados.has(transaction.id)}
-                        onChange={() => alternar(transaction.id)}
-                      />
-                    </td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{date(transaction.occurredOn)}</td>
-                    <td>
-                      <button
-                        className="link"
-                        onClick={() => {
-                          setFocoNaCategoria(false);
-                          setEditandoId(transaction.id);
-                        }}
-                      >
-                        {transaction.description}
-                      </button>
-                      {transaction.isTransfer ? (
-                        <>
-                          {' '}
-                          <span className="tag">transferência</span>
-                        </>
-                      ) : null}
+
+                  <div className="tx-info">
+                    <button
+                      className="link tx-name"
+                      onClick={() => {
+                        setFocoNaCategoria(false);
+                        setEditandoId(transaction.id);
+                      }}
+                    >
+                      {transaction.description}
+                    </button>
+                    <div className="tx-meta">
+                      <span>{date(transaction.occurredOn)}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>{accountName.get(transaction.accountId) ?? '—'}</span>
+                      {transaction.isTransfer ? <span className="tag">transferência</span> : null}
                       {transaction.notes ? (
-                        <>
-                          {' '}
-                          <span className="tag tag-nota" title={transaction.notes}>
-                            nota
-                          </span>
-                        </>
+                        <span className="tag tag-nota" title={transaction.notes}>
+                          nota
+                        </span>
                       ) : null}
-                    </td>
-                    <td>{accountName.get(transaction.accountId) ?? '—'}</td>
-                    <td>
+                    </div>
+                  </div>
+
+                  <div className="tx-right">
+                    {isMobile ? null : (
                       <CategoryPicker
                         value={transaction.categoryId}
                         categories={categoriasDisponiveis}
@@ -613,19 +556,25 @@ export function Transactions({
                           setEditandoId(transaction.id);
                         }}
                       />
-                    </td>
-                    <td className="num">
-                      <span className={transaction.amountCents > 0 ? 'amount-in' : 'amount-out'}>
-                        {money(transaction.amountCents)}
-                      </span>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                    )}
+                    <span className={entrada ? 'tx-amount pos' : 'tx-amount neg'}>
+                      {money(transaction.amountCents)}
+                    </span>
+                  </div>
+                </article>
+              );
+            })
+          )}
         </div>
-      )}
+      </div>
+
+      {/* No celular o seletor não cabe na linha sem espremer a descrição,
+          então ele desce para uma segunda faixa dentro do próprio card. */}
+      {isMobile && items.length > 0 ? (
+        <p className="page-subtitle" style={{ marginTop: 12, fontSize: '0.8rem' }}>
+          Toque na descrição para mudar categoria, tipo ou escrever uma observação.
+        </p>
+      ) : null}
 
       {editando ? (
         <TransactionModal
