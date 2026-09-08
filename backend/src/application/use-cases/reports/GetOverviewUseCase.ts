@@ -1,4 +1,5 @@
 import type { Category } from '../../../domain/entities/Category.js';
+import type { AccountRepository } from '../../ports/repositories/AccountRepository.js';
 import type { CategoryRepository } from '../../ports/repositories/CategoryRepository.js';
 import type {
   MonthlyTotal,
@@ -24,6 +25,12 @@ export interface OverviewOutput {
   /** O que sobrou na conta: receita − consumo − aporte. */
   balanceCents: number;
   /**
+   * Parte da despesa que foi no cartão e portanto ainda não saiu da
+   * conta — sai no vencimento da fatura. Sem essa separação, o mês
+   * mistura dinheiro que já foi embora com dinheiro que ainda vai.
+   */
+  expenseOnCardCents: number;
+  /**
    * Quanto da renda não virou consumo, incluindo o que ficou parado na
    * conta. `null` quando não houve receita no período — a divisão não
    * existe, e mostrar 0% diria que nada foi guardado.
@@ -45,6 +52,7 @@ export class GetOverviewUseCase {
   constructor(
     private readonly transactions: TransactionRepository,
     private readonly categories: CategoryRepository,
+    private readonly accounts: AccountRepository,
   ) {}
 
   async execute(input: {
@@ -60,13 +68,30 @@ export class GetOverviewUseCase {
       ...(input.accountIds?.length ? { accountIds: input.accountIds } : {}),
     };
 
-    const [totals, monthly, categories] = await Promise.all([
+    const [totals, monthly, categories, accountList] = await Promise.all([
       this.transactions.totalsByCategory(input.userId, filters),
       this.transactions.monthlyTotals(input.userId, input.year),
       this.categories.listByUser(input.userId),
+      this.accounts.listByUser(input.userId),
     ]);
 
+    // Segunda passada só nos cartões. Sai mais barato que carregar o tipo
+    // da conta em cada linha da agregação, e a pergunta é uma só: quanto
+    // desta despesa ainda está pendurado na fatura.
+    const cartoes = accountList
+      .filter((account) => account.isCreditCard)
+      .filter((account) => !input.accountIds?.length || input.accountIds.includes(account.id))
+      .map((account) => account.id);
+
+    const totaisDoCartao = cartoes.length
+      ? await this.transactions.totalsByCategory(input.userId, { ...filters, accountIds: cartoes })
+      : [];
+
     const byId = new Map<string, Category>(categories.map((c) => [c.id, c]));
+
+    const expenseOnCardCents = totaisDoCartao
+      .filter((total) => !total.categoryId || !byId.get(total.categoryId)?.isSaving)
+      .reduce((soma, total) => soma + total.expenseCents, 0);
 
     let incomeCents = 0;
     let expenseCents = 0;
@@ -104,6 +129,7 @@ export class GetOverviewUseCase {
       incomeCents,
       expenseCents,
       savingCents,
+      expenseOnCardCents,
       balanceCents: incomeCents - expenseCents - savingCents,
       savingRatePercent:
         incomeCents > 0 ? Math.round(((incomeCents - expenseCents) / incomeCents) * 100) : null,

@@ -86,6 +86,7 @@ describe('borda HTTP', () => {
       'GET /accounts',
       'GET /categories',
       'GET /imports',
+      'GET /reports/networth',
       'GET /reports/overview',
       'GET /reports/snapshot',
       'GET /reports/summary',
@@ -97,6 +98,7 @@ describe('borda HTTP', () => {
       'POST /categories',
       'POST /imports',
       'POST /imports/:id/flip-signs',
+      'PUT /accounts/:id/balance',
     ]);
   });
 

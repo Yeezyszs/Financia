@@ -5,7 +5,13 @@ import type {
   CategoryTotal,
   MonthlyTotal,
 } from '../../../src/application/ports/repositories/TransactionRepository.js';
-import { InMemoryCategoryRepository, USER_ID } from '../../doubles/InMemoryRepositories.js';
+import {
+  InMemoryAccountRepository,
+  InMemoryCategoryRepository,
+  USER_ID,
+  makeCard,
+  makeChecking,
+} from '../../doubles/InMemoryRepositories.js';
 
 function categoria(id: string, name: string, kind: 'expense' | 'income' | 'saving') {
   return new Category({ id, userId: USER_ID, name, kind, color: null, icon: null, isSystem: true });
@@ -40,6 +46,7 @@ describe('aporte fora da despesa', () => {
     const useCase = new GetOverviewUseCase(
       repositorio(AGOSTO),
       new InMemoryCategoryRepository(CATEGORIAS),
+      new InMemoryAccountRepository([makeChecking()]),
     );
 
     const overview = await useCase.execute({
@@ -61,6 +68,7 @@ describe('aporte fora da despesa', () => {
     const useCase = new GetOverviewUseCase(
       repositorio(AGOSTO),
       new InMemoryCategoryRepository(CATEGORIAS),
+      new InMemoryAccountRepository([makeChecking()]),
     );
 
     const overview = await useCase.execute({
@@ -82,6 +90,7 @@ describe('aporte fora da despesa', () => {
         { categoryId: 'investimentos', incomeCents: 100000, expenseCents: 267000, count: 8 },
       ]),
       new InMemoryCategoryRepository(CATEGORIAS),
+      new InMemoryAccountRepository([makeChecking()]),
     );
 
     const overview = await useCase.execute({
@@ -99,6 +108,7 @@ describe('aporte fora da despesa', () => {
     const useCase = new GetOverviewUseCase(
       repositorio([{ categoryId: 'alimentacao', incomeCents: 0, expenseCents: 5000, count: 1 }]),
       new InMemoryCategoryRepository(CATEGORIAS),
+      new InMemoryAccountRepository([makeChecking()]),
     );
 
     const overview = await useCase.execute({

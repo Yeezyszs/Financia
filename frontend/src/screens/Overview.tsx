@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { api } from '../api/client.js';
-import type { Drill, Overview as OverviewData, Snapshot } from '../api/types.js';
+import type { Drill, NetWorth, Overview as OverviewData, Snapshot } from '../api/types.js';
 import { CategoryChart } from '../components/CategoryChart.js';
 import { MonthlyChart } from '../components/MonthlyChart.js';
 import { RecurringCard } from '../components/RecurringCard.js';
 import { TrendList } from '../components/TrendList.js';
 import { ExportSummary } from '../components/ExportSummary.js';
+import { NetWorthCard } from '../components/NetWorthCard.js';
 import { money, monthRange, monthsBefore } from '../format.js';
 import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 
@@ -32,6 +33,10 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [janela, setJanela] = useState(6);
   const [erroSnapshot, setErroSnapshot] = useState<string | null>(null);
+  const [netWorth, setNetWorth] = useState<NetWorth | null>(null);
+  // Muda quando um saldo é informado: é o que faz o patrimônio recarregar
+  // sem arrastar junto o resto da página.
+  const [versaoSaldo, setVersaoSaldo] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const isMobile = useMediaQuery(MOBILE);
@@ -85,6 +90,24 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
       active = false;
     };
   }, [year, month, janela]);
+
+  useEffect(() => {
+    let active = true;
+    api
+      .netWorth({ from: monthsBefore(year, month, janela - 1), to: monthRange(year, month).to })
+      .then((result) => {
+        if (active) setNetWorth(result);
+      })
+      .catch(() => {
+        // O patrimônio é um card a mais: falhar aqui não pode derrubar a
+        // Visão geral inteira. O card mostra o esqueleto e a pessoa segue.
+        if (active) setNetWorth(null);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [year, month, janela, versaoSaldo]);
 
   const balancePositive = (data?.balanceCents ?? 0) >= 0;
 
@@ -166,7 +189,11 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
               money(data?.expenseCents ?? 0)
             )}
           </div>
-          <p className="kpi-hint">Só consumo — aporte não entra aqui</p>
+          <p className="kpi-hint">
+            {(data?.expenseOnCardCents ?? 0) > 0
+              ? `${money(data?.expenseOnCardCents ?? 0)} ainda vai sair na fatura`
+              : 'Só consumo — aporte não entra aqui'}
+          </p>
         </div>
 
         <div className="card">
@@ -201,6 +228,11 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
               : `Guardou ${taxaPoupanca}% da renda, contando o aporte`}
           </p>
         </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: 14 }}>
+        <h2 className="card-title">Patrimônio</h2>
+        <NetWorthCard data={netWorth} onChanged={() => setVersaoSaldo((v) => v + 1)} />
       </div>
 
       <div className="chart-grid">

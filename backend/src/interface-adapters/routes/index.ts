@@ -34,6 +34,11 @@ export function buildRoutes(route: ControllerResolver): Router {
     route((c) => c.accounts.create),
   );
 
+  router.put(
+    '/accounts/:id/balance',
+    route((c) => c.accounts.balance),
+  );
+
   router.get(
     '/transactions',
     route((c) => c.transactions.list),
@@ -82,6 +87,10 @@ export function buildRoutes(route: ControllerResolver): Router {
   router.get(
     '/reports/overview',
     route((c) => c.reports.overview),
+  );
+  router.get(
+    '/reports/networth',
+    route((c) => c.reports.netWorth),
   );
   router.get(
     '/reports/snapshot',

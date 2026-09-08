@@ -233,7 +233,7 @@ export function History({
               a fatura.
             </div>
             <div className="row">
-              <NewAccountForm onCreated={onAccountsChanged} />
+              <NewAccountForm onCreated={onAccountsChanged} accounts={accounts} />
             </div>
           </div>
         ) : (
@@ -254,7 +254,7 @@ export function History({
                   ))}
                 </select>
               </div>
-              <NewAccountForm onCreated={onAccountsChanged} />
+              <NewAccountForm onCreated={onAccountsChanged} accounts={accounts} />
             </div>
 
             <div

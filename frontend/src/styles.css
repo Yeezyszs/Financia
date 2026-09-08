@@ -1307,3 +1307,37 @@ select.card-control {
 .lista-suspeitos .rec-meta {
   display: block;
 }
+
+/* Patrimônio: dois números que se leem juntos — o que se tem e por
+   quantos meses isso dura. */
+.patrimonio-topo {
+  display: flex;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.posicao {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.posicao .rec-meta {
+  grid-column: 1 / -1;
+}
+
+.informar-saldo {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.informar-saldo .field {
+  flex: 1;
+  min-width: 140px;
+}

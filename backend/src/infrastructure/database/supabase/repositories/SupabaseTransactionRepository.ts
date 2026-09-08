@@ -241,6 +241,32 @@ export class SupabaseTransactionRepository implements TransactionRepository {
     }));
   }
 
+  async listMovements(userId: string) {
+    // Sem recorte de data: o último pagamento de fatura que define o que
+    // ainda está em aberto pode ser de qualquer época, e um recorte
+    // arbitrário faria o cartão parecer inteiro em aberto.
+    const { data, error } = await this.db
+      .from(TABLE)
+      .select('account_id, occurred_on, amount_cents, is_transfer')
+      .eq('user_id', userId)
+      .order('occurred_on', { ascending: true });
+    if (error) throw error;
+
+    return (
+      data as {
+        account_id: string;
+        occurred_on: string;
+        amount_cents: number;
+        is_transfer: boolean;
+      }[]
+    ).map((row) => ({
+      accountId: row.account_id,
+      occurredOn: row.occurred_on,
+      amountCents: Number(row.amount_cents),
+      isTransfer: row.is_transfer,
+    }));
+  }
+
   async listForAnalysis(
     userId: string,
     from: string,

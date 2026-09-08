@@ -22,6 +22,9 @@ import { ListImportsUseCase } from '../application/use-cases/imports/ListImports
 import { GetOverviewUseCase } from '../application/use-cases/reports/GetOverviewUseCase.js';
 import { ListCategoriesUseCase } from '../application/use-cases/categories/ListCategoriesUseCase.js';
 import { CreateCategoryUseCase } from '../application/use-cases/categories/CreateCategoryUseCase.js';
+import { SetAccountBalanceUseCase } from '../application/use-cases/accounts/SetAccountBalanceUseCase.js';
+import { GetNetWorthUseCase } from '../application/use-cases/reports/GetNetWorthUseCase.js';
+import { SupabaseAccountBalanceRepository } from '../infrastructure/database/supabase/repositories/SupabaseAccountBalanceRepository.js';
 import { GetFinancialSnapshotUseCase } from '../application/use-cases/insights/GetFinancialSnapshotUseCase.js';
 import { AccountController } from '../interface-adapters/controllers/AccountController.js';
 import { TransactionController } from '../interface-adapters/controllers/TransactionController.js';
@@ -80,13 +83,25 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
   const categorizeMany = new CategorizeManyUseCase(transactionRepository, categoryRepository);
   const flipImportSigns = new FlipImportSignsUseCase(importRepository, transactionRepository);
   const deleteImport = new DeleteImportUseCase(importRepository, transactionRepository);
-  const getOverview = new GetOverviewUseCase(transactionRepository, categoryRepository);
+  const getOverview = new GetOverviewUseCase(
+    transactionRepository,
+    categoryRepository,
+    accountRepository,
+  );
   const listCategories = new ListCategoriesUseCase(categoryRepository);
   const createCategory = new CreateCategoryUseCase(categoryRepository, ids);
+  const balanceRepository = new SupabaseAccountBalanceRepository(db);
+  const setAccountBalance = new SetAccountBalanceUseCase(accountRepository, balanceRepository);
+  const getNetWorth = new GetNetWorthUseCase(
+    accountRepository,
+    balanceRepository,
+    transactionRepository,
+    categoryRepository,
+  );
   const getSnapshot = new GetFinancialSnapshotUseCase(transactionRepository, categoryRepository);
 
   return {
-    accounts: new AccountController(createAccount, listAccounts),
+    accounts: new AccountController(createAccount, listAccounts, setAccountBalance),
     transactions: new TransactionController(
       listTransactions,
       categorizeTransaction,
@@ -94,7 +109,7 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
       categorizeMany,
     ),
     imports: new ImportController(importStatement, listImports, flipImportSigns, deleteImport),
-    reports: new ReportController(getOverview, getSnapshot),
+    reports: new ReportController(getOverview, getSnapshot, getNetWorth),
     categories: new CategoryController(listCategories, createCategory),
   };
 }

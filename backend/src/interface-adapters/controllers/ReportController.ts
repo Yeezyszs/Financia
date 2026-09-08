@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import type { GetOverviewUseCase } from '../../application/use-cases/reports/GetOverviewUseCase.js';
 import type { GetFinancialSnapshotUseCase } from '../../application/use-cases/insights/GetFinancialSnapshotUseCase.js';
+import type { GetNetWorthUseCase } from '../../application/use-cases/reports/GetNetWorthUseCase.js';
 import { snapshotToMarkdown } from '../presenters/SnapshotMarkdownPresenter.js';
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -41,7 +42,18 @@ export class ReportController {
   constructor(
     private readonly getOverview: GetOverviewUseCase,
     private readonly getSnapshot: GetFinancialSnapshotUseCase,
+    private readonly getNetWorth: GetNetWorthUseCase,
   ) {}
+
+  netWorth = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const query = z.object({ from: isoDate, to: isoDate }).parse(req.query);
+      const result = await this.getNetWorth.execute({ userId: req.userId, ...query });
+      res.json({ data: result });
+    } catch (error) {
+      next(error);
+    }
+  };
 
   snapshot = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {

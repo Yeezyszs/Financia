@@ -8,6 +8,10 @@ import type { CategoryRepository } from '../../src/application/ports/repositorie
 import type { CategoryRuleRepository } from '../../src/application/ports/repositories/CategoryRuleRepository.js';
 import type { ImportRepository } from '../../src/application/ports/repositories/ImportRepository.js';
 import type {
+  AccountBalanceAnchor,
+  AccountBalanceRepository,
+} from '../../src/application/ports/repositories/AccountBalanceRepository.js';
+import type {
   CategoryMonthPoint,
   CategoryTotal,
   MonthlyTotal,
@@ -145,8 +149,41 @@ export class InMemoryTransactionRepository implements TransactionRepository {
     });
     return afetadas;
   }
-  async categorySeries(): Promise<CategoryMonthPoint[]> {
-    return [];
+  async categorySeries(userId: string, from: string, to: string): Promise<CategoryMonthPoint[]> {
+    // Implementado de verdade, e não devolvendo lista vazia: um dobro que
+    // mente faz o teste passar sobre um cálculo que nunca aconteceu.
+    const porChave = new Map<string, CategoryMonthPoint>();
+
+    for (const t of this.transactions) {
+      if (t.userId !== userId || t.isTransfer) continue;
+      if (t.occurredOn < from || t.occurredOn > to) continue;
+
+      const month = t.occurredOn.slice(0, 7);
+      const chave = `${month}|${t.categoryId ?? ''}`;
+      const ponto = porChave.get(chave) ?? {
+        month,
+        categoryId: t.categoryId,
+        incomeCents: 0,
+        expenseCents: 0,
+        count: 0,
+      };
+      if (t.amount.cents > 0) ponto.incomeCents += t.amount.cents;
+      else ponto.expenseCents += -t.amount.cents;
+      ponto.count += 1;
+      porChave.set(chave, ponto);
+    }
+
+    return [...porChave.values()].sort((a, b) => a.month.localeCompare(b.month));
+  }
+  async listMovements(userId: string) {
+    return this.transactions
+      .filter((t) => t.userId === userId)
+      .map((t) => ({
+        accountId: t.accountId,
+        occurredOn: t.occurredOn,
+        amountCents: t.amount.cents,
+        isTransfer: t.isTransfer,
+      }));
   }
   async listForAnalysis(userId: string, from: string, to: string) {
     return this.transactions
@@ -242,6 +279,24 @@ export function makeCard(): Account {
     settlementAccountId: 'acc-checking',
     isActive: true,
   });
+}
+
+export class InMemoryAccountBalanceRepository implements AccountBalanceRepository {
+  constructor(public anchors: AccountBalanceAnchor[] = []) {}
+  async latestByAccount(_userId: string) {
+    const porConta = new Map<string, AccountBalanceAnchor>();
+    for (const ancora of [...this.anchors].sort((a, b) => b.onDate.localeCompare(a.onDate))) {
+      if (!porConta.has(ancora.accountId)) porConta.set(ancora.accountId, ancora);
+    }
+    return porConta;
+  }
+  async upsert(_userId: string, anchor: AccountBalanceAnchor) {
+    this.anchors = this.anchors.filter(
+      (a) => !(a.accountId === anchor.accountId && a.onDate === anchor.onDate),
+    );
+    this.anchors.push(anchor);
+    return anchor;
+  }
 }
 
 export function makeCategory(id: string, name: string, kind: Category['kind']): Category {

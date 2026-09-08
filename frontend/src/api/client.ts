@@ -4,6 +4,7 @@ import type {
   Category,
   ImportRecord,
   ImportResult,
+  NetWorth,
   Overview,
   Snapshot,
   Transaction,
@@ -151,6 +152,16 @@ export const api = {
       learnedPattern: string | null;
       alsoUpdatedIds: string[];
     }>(`/transactions/${id}/category`, { method: 'PATCH', body: JSON.stringify(body) }),
+
+  netWorth: (query: { from: string; to: string }) =>
+    request<NetWorth>(`/reports/networth${toQueryString(query)}`),
+
+  /** Informa quanto havia na conta numa data. Só conta corrente. */
+  setAccountBalance: (id: string, body: { onDate: string; balanceCents: number }) =>
+    request<{ onDate: string; balanceCents: number }>(`/accounts/${id}/balance`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
 
   snapshot: (query: { month?: string; months?: number } = {}) =>
     request<Snapshot>(`/reports/snapshot${toQueryString(query)}`),

@@ -14,6 +14,13 @@ export interface TransactionFilters {
   offset?: number;
 }
 
+export interface AccountMovement {
+  accountId: string;
+  occurredOn: string;
+  amountCents: number;
+  isTransfer: boolean;
+}
+
 export interface Paginated<T> {
   items: T[];
   total: number;
@@ -92,6 +99,15 @@ export interface TransactionRepository {
     isTransfer: boolean,
     categorizedBy: 'rule' | 'manual',
   ): Promise<number>;
+
+  /**
+   * Movimento cru por conta, para calcular saldo e fatura em aberto.
+   *
+   * Inclui transferência: o pagamento da fatura não é despesa, mas é
+   * exatamente o que tira dinheiro da conta e zera o cartão. Excluí-lo
+   * aqui — como a análise de gasto faz — daria um saldo alto demais.
+   */
+  listMovements(userId: string): Promise<AccountMovement[]>;
 
   /** Série mensal por categoria no intervalo — base da análise de tendência. */
   categorySeries(userId: string, from: string, to: string): Promise<CategoryMonthPoint[]>;

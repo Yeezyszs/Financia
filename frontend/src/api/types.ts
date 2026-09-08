@@ -72,6 +72,8 @@ export interface Overview {
   /** Só consumo — aporte vem em `savingCents`. */
   expenseCents: number;
   savingCents: number;
+  /** Parte da despesa que foi no cartão e ainda não saiu da conta. */
+  expenseOnCardCents: number;
   balanceCents: number;
   /** Fatia da renda que não virou consumo. `null` sem receita. */
   savingRatePercent: number | null;
@@ -84,6 +86,26 @@ export interface SinalSuspeito {
   description: string;
   amountCents: number;
   esperado: 'entrada' | 'saida';
+}
+
+export interface AccountPosition {
+  accountId: string;
+  name: string;
+  type: AccountType;
+  /** Conta corrente: saldo. Cartão: fatura em aberto, positiva. */
+  amountCents: number;
+  asOf: string | null;
+  known: boolean;
+}
+
+export interface NetWorth {
+  accounts: AccountPosition[];
+  cashCents: number;
+  cardDebtCents: number;
+  netWorthCents: number;
+  costOfLivingCents: number;
+  monthsOfRunway: number | null;
+  accountsMissingBalance: number;
 }
 
 export interface ImportResult {
