@@ -1,4 +1,5 @@
 import { conferirSinais, type SinalSuspeito } from '../../../domain/analysis/SignCheck.js';
+import type { LinkInstallmentsService } from '../installments/LinkInstallmentsService.js';
 import { Import } from '../../../domain/entities/Import.js';
 import { Transaction } from '../../../domain/entities/Transaction.js';
 import { DomainError, NotFoundError } from '../../../domain/errors/DomainError.js';
@@ -42,6 +43,8 @@ export interface ImportStatementOutput {
    * de quem tem o extrato na mão.
    */
   suspectSigns: SinalSuspeito[];
+  /** Parcelas reconhecidas e ligadas a uma compra parcelada cadastrada. */
+  installmentsLinked: number;
 }
 
 /**
@@ -64,6 +67,7 @@ export class ImportStatementUseCase {
     private readonly parsers: StatementParserRegistry,
     private readonly ids: IdGenerator,
     private readonly hasher: Hasher,
+    private readonly links: LinkInstallmentsService,
   ) {}
 
   async execute(input: ImportStatementInput): Promise<ImportStatementOutput> {
@@ -186,8 +190,15 @@ export class ImportStatementUseCase {
         })),
       );
 
-      await this.transactions.createMany(toInsert);
+      const inseridas = await this.transactions.createMany(toInsert);
       if (usedRuleIds.length > 0) await this.rules.incrementHits(usedRuleIds);
+
+      // Só o que entrou agora: as linhas descartadas pelo dedupe já foram
+      // ligadas na importação em que apareceram pela primeira vez.
+      const installmentsLinked = await this.links.ligar({
+        userId: input.userId,
+        linhas: inseridas.map((t) => ({ id: t.id, description: t.description })),
+      });
 
       const completed = saved.complete({
         rowsTotal: statement.rows.length,
@@ -207,6 +218,7 @@ export class ImportStatementUseCase {
         periodStart: statement.periodStart,
         periodEnd: statement.periodEnd,
         suspectSigns,
+        installmentsLinked,
       };
     } catch (error) {
       // O log de importação registra a falha — a tela de Histórico precisa

@@ -8,8 +8,9 @@ import { Login } from './Login.js';
 import { Overview } from './screens/Overview.js';
 import { Transactions } from './screens/Transactions.js';
 import { History } from './screens/History.js';
+import { Installments } from './screens/Installments.js';
 
-type Screen = 'overview' | 'transactions' | 'history';
+type Screen = 'overview' | 'transactions' | 'installments' | 'history';
 
 /**
  * O ícone só aparece na navegação de rodapé do celular, onde o alvo de
@@ -33,6 +34,16 @@ const SCREENS: { id: Screen; label: string; short: string; icon: ReactNode }[] =
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <path d="M4 7h13l-3-3 1.4-1.4L20.8 8l-5.4 5.4L14 12l3-3H4V7Zm16 10H7l3 3-1.4 1.4L3.2 16l5.4-5.4L10 12l-3 3h13v2Z" />
+      </svg>
+    ),
+  },
+  {
+    id: 'installments',
+    label: 'Parcelas',
+    short: 'Parcelas',
+    icon: (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 5h18v4H3V5Zm0 6h8v8H3v-8Zm10 0h8v2h-8v-2Zm0 3h8v2h-8v-2Zm0 3h8v2h-8v-2Z" />
       </svg>
     ),
   },
@@ -173,6 +184,14 @@ export function App(): ReactNode {
             categories={categories}
             {...(drill ? { drill: drill.filtro } : {})}
             onLimparDrill={() => setDrill(null)}
+          />
+        ) : null}
+        {screen === 'installments' ? (
+          <Installments
+            key={`installments-${dataVersion}`}
+            accounts={accounts}
+            categories={categories}
+            onChanged={loadReferenceData}
           />
         ) : null}
         {screen === 'history' ? (

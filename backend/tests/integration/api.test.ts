@@ -83,9 +83,11 @@ describe('borda HTTP', () => {
 
     expect([...registradas].sort()).toEqual([
       'DELETE /imports/:id',
+      'DELETE /installments/:id',
       'GET /accounts',
       'GET /categories',
       'GET /imports',
+      'GET /installments',
       'GET /reports/networth',
       'GET /reports/overview',
       'GET /reports/snapshot',
@@ -98,6 +100,7 @@ describe('borda HTTP', () => {
       'POST /categories',
       'POST /imports',
       'POST /imports/:id/flip-signs',
+      'POST /installments',
       'PUT /accounts/:id/balance',
     ]);
   });

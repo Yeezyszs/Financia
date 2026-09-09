@@ -793,6 +793,29 @@ select.card-control {
   min-width: 116px;
 }
 
+/* Trilha de parcelas: uma casa por parcela, as pagas preenchidas.
+   Barras e não pontos porque o olho conta grupos de barras melhor —
+   e em 24 parcelas os pontos viram uma linha só. */
+.parcela-trilha {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 7px;
+}
+
+.parcela-casa {
+  width: 13px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--border-2);
+  border: 1px solid var(--border);
+}
+
+.parcela-casa.paga {
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
 /* Pill de categoria: identifica sem competir com a descrição. */
 .pill {
   display: inline-flex;

@@ -81,6 +81,38 @@ export interface Overview {
   monthly: MonthlyTotal[];
 }
 
+export interface Parcela {
+  number: number;
+  dueOn: string;
+  amountCents: number;
+  paid: boolean;
+}
+
+export interface InstallmentPlan {
+  id: string;
+  accountId: string;
+  description: string;
+  merchantKey: string;
+  totalCents: number;
+  installments: number;
+  firstChargeOn: string;
+  categoryId: string | null;
+  paidCount: number;
+  /** O que ainda vai ser cobrado. */
+  remainingCents: number;
+  monthlyCents: number;
+  settled: boolean;
+  nextDueOn: string | null;
+  parcelas: Parcela[];
+}
+
+export interface InstallmentsOverview {
+  plans: InstallmentPlan[];
+  remainingCents: number;
+  monthlyCents: number;
+  openPlans: number;
+}
+
 export interface SinalSuspeito {
   occurredOn: string;
   description: string;
@@ -117,6 +149,8 @@ export interface ImportResult {
   periodStart: string | null;
   periodEnd: string | null;
   suspectSigns: SinalSuspeito[];
+  /** Parcelas reconhecidas e ligadas a um parcelamento cadastrado. */
+  installmentsLinked: number;
 }
 
 /**

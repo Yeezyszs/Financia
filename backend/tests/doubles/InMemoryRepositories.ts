@@ -2,6 +2,8 @@ import { Account } from '../../src/domain/entities/Account.js';
 import { Category } from '../../src/domain/entities/Category.js';
 import { CategoryRule } from '../../src/domain/entities/CategoryRule.js';
 import type { Import } from '../../src/domain/entities/Import.js';
+import { InstallmentPlan } from '../../src/domain/entities/InstallmentPlan.js';
+import type { InstallmentPlanRepository } from '../../src/application/ports/repositories/InstallmentPlanRepository.js';
 import type { Transaction } from '../../src/domain/entities/Transaction.js';
 import type { AccountRepository } from '../../src/application/ports/repositories/AccountRepository.js';
 import type { CategoryRepository } from '../../src/application/ports/repositories/CategoryRepository.js';
@@ -120,6 +122,11 @@ export class InMemoryTransactionRepository implements TransactionRepository {
       return t.withDirection(t.amount.cents > 0 ? 'expense' : 'income');
     });
     return afetadas;
+  }
+  async listForLinking(userId: string, accountId: string) {
+    return this.transactions
+      .filter((t) => t.userId === userId && t.accountId === accountId)
+      .map((t) => ({ id: t.id, description: t.description }));
   }
   async deleteByImport(userId: string, importId: string) {
     const antes = this.transactions.length;
@@ -296,6 +303,45 @@ export class InMemoryAccountBalanceRepository implements AccountBalanceRepositor
     );
     this.anchors.push(anchor);
     return anchor;
+  }
+}
+
+export class InMemoryInstallmentPlanRepository implements InstallmentPlanRepository {
+  constructor(public plans: InstallmentPlan[] = []) {}
+
+  async listByUser(userId: string) {
+    return this.plans.filter((p) => p.userId === userId);
+  }
+  async findById(userId: string, id: string) {
+    return this.plans.find((p) => p.userId === userId && p.id === id) ?? null;
+  }
+  async create(plan: InstallmentPlan) {
+    this.plans.push(plan);
+    return plan;
+  }
+  async delete(userId: string, id: string) {
+    this.plans = this.plans.filter((p) => !(p.userId === userId && p.id === id));
+  }
+  async linkTransaction(input: {
+    userId: string;
+    planId: string;
+    number: number;
+    transactionId: string;
+  }) {
+    const plano = this.plans.find((p) => p.userId === input.userId && p.id === input.planId);
+    const parcela = plano?.parcelas.find((p) => p.number === input.number);
+    // Já ligada não é sobrescrita — o mesmo que o `is null` do banco faz.
+    if (!parcela || parcela.transactionId !== null) return false;
+
+    const props = plano!.toJSON();
+    const atualizado = new InstallmentPlan({
+      ...props,
+      parcelas: props.parcelas.map((p) =>
+        p.number === input.number ? { ...p, transactionId: input.transactionId } : p,
+      ),
+    });
+    this.plans = this.plans.map((p) => (p.id === atualizado.id ? atualizado : p));
+    return true;
   }
 }
 

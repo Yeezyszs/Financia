@@ -25,6 +25,12 @@ import { CreateCategoryUseCase } from '../application/use-cases/categories/Creat
 import { SetAccountBalanceUseCase } from '../application/use-cases/accounts/SetAccountBalanceUseCase.js';
 import { GetNetWorthUseCase } from '../application/use-cases/reports/GetNetWorthUseCase.js';
 import { SupabaseAccountBalanceRepository } from '../infrastructure/database/supabase/repositories/SupabaseAccountBalanceRepository.js';
+import { SupabaseInstallmentPlanRepository } from '../infrastructure/database/supabase/repositories/SupabaseInstallmentPlanRepository.js';
+import { LinkInstallmentsService } from '../application/use-cases/installments/LinkInstallmentsService.js';
+import { CreateInstallmentPlanUseCase } from '../application/use-cases/installments/CreateInstallmentPlanUseCase.js';
+import { ListInstallmentPlansUseCase } from '../application/use-cases/installments/ListInstallmentPlansUseCase.js';
+import { DeleteInstallmentPlanUseCase } from '../application/use-cases/installments/DeleteInstallmentPlanUseCase.js';
+import { InstallmentController } from '../interface-adapters/controllers/InstallmentController.js';
 import { GetFinancialSnapshotUseCase } from '../application/use-cases/insights/GetFinancialSnapshotUseCase.js';
 import { AccountController } from '../interface-adapters/controllers/AccountController.js';
 import { TransactionController } from '../interface-adapters/controllers/TransactionController.js';
@@ -68,6 +74,9 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
     categoryRuleRepository,
     ids,
   );
+  const planRepository = new SupabaseInstallmentPlanRepository(db);
+  const linkInstallments = new LinkInstallmentsService(planRepository);
+
   const importStatement = new ImportStatementUseCase(
     accountRepository,
     importRepository,
@@ -77,6 +86,7 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
     parsers,
     ids,
     hasher,
+    linkInstallments,
   );
   const listImports = new ListImportsUseCase(importRepository);
   const updateTransaction = new UpdateTransactionUseCase(transactionRepository);
@@ -111,5 +121,15 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
     imports: new ImportController(importStatement, listImports, flipImportSigns, deleteImport),
     reports: new ReportController(getOverview, getSnapshot, getNetWorth),
     categories: new CategoryController(listCategories, createCategory),
+    installments: new InstallmentController(
+      new ListInstallmentPlansUseCase(planRepository),
+      new CreateInstallmentPlanUseCase(
+        planRepository,
+        accountRepository,
+        transactionRepository,
+        ids,
+      ),
+      new DeleteInstallmentPlanUseCase(planRepository),
+    ),
   };
 }

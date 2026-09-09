@@ -178,6 +178,18 @@ export class SupabaseTransactionRepository implements TransactionRepository {
     return rows.length;
   }
 
+  async listForLinking(userId: string, accountId: string) {
+    const { data, error } = await this.db
+      .from(TABLE)
+      .select('id, description')
+      .eq('user_id', userId)
+      .eq('account_id', accountId)
+      .order('occurred_on', { ascending: true });
+    if (error) throw error;
+
+    return data as { id: string; description: string }[];
+  }
+
   async deleteByImport(userId: string, importId: string): Promise<number> {
     // `count: 'exact'` no delete devolve quantas linhas saíram, que é o
     // número mostrado ao usuário depois de desfazer a importação.

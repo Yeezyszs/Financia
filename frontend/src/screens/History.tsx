@@ -352,6 +352,15 @@ export function History({
                 <b>{result.rowsImported}</b> transações importadas de {result.rowsTotal} linhas ·{' '}
                 <b>{result.rowsDuplicated}</b> já existiam · <b>{result.categorized}</b>{' '}
                 categorizadas automaticamente
+                {result.installmentsLinked > 0 ? (
+                  <>
+                    {' '}
+                    · <b>{result.installmentsLinked}</b>{' '}
+                    {result.installmentsLinked === 1
+                      ? 'parcela reconhecida'
+                      : 'parcelas reconhecidas'}
+                  </>
+                ) : null}
                 {result.periodStart ? (
                   <>
                     {' '}

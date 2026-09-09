@@ -82,6 +82,13 @@ export interface TransactionRepository {
    */
   flipSignsForImport(userId: string, importId: string): Promise<number>;
 
+  /**
+   * Descrições de uma conta, para procurar marca de parcela. Só id e
+   * texto: quem chama não precisa de mais nada e a fatura inteira cabe
+   * numa consulta.
+   */
+  listForLinking(userId: string, accountId: string): Promise<{ id: string; description: string }[]>;
+
   /** Apaga tudo que veio de uma importação. Devolve quantas linhas saíram. */
   deleteByImport(userId: string, importId: string): Promise<number>;
 

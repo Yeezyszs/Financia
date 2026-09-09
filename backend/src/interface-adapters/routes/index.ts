@@ -4,6 +4,7 @@ import type { TransactionController } from '../controllers/TransactionController
 import type { ImportController } from '../controllers/ImportController.js';
 import type { ReportController } from '../controllers/ReportController.js';
 import type { CategoryController } from '../controllers/CategoryController.js';
+import type { InstallmentController } from '../controllers/InstallmentController.js';
 
 export interface Controllers {
   accounts: AccountController;
@@ -11,6 +12,7 @@ export interface Controllers {
   imports: ImportController;
   reports: ReportController;
   categories: CategoryController;
+  installments: InstallmentController;
 }
 
 /**
@@ -74,6 +76,19 @@ export function buildRoutes(route: ControllerResolver): Router {
   router.delete(
     '/imports/:id',
     route((c) => c.imports.remove),
+  );
+
+  router.get(
+    '/installments',
+    route((c) => c.installments.list),
+  );
+  router.post(
+    '/installments',
+    route((c) => c.installments.create),
+  );
+  router.delete(
+    '/installments/:id',
+    route((c) => c.installments.remove),
   );
 
   router.get(

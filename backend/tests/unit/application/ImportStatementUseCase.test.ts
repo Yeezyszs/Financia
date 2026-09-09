@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ImportStatementUseCase } from '../../../src/application/use-cases/imports/ImportStatementUseCase.js';
+import { LinkInstallmentsService } from '../../../src/application/use-cases/installments/LinkInstallmentsService.js';
 import { ParserRegistry } from '../../../src/infrastructure/parsers/ParserRegistry.js';
 import { Sha256Hasher } from '../../../src/infrastructure/services/Sha256Hasher.js';
 import { EXTRATO_ISO, FATURA } from '../../fixtures/nubank.js';
@@ -8,6 +9,7 @@ import {
   InMemoryCategoryRepository,
   InMemoryCategoryRuleRepository,
   InMemoryImportRepository,
+  InMemoryInstallmentPlanRepository,
   InMemoryTransactionRepository,
   SequentialIds,
   USER_ID,
@@ -27,6 +29,7 @@ function setup() {
     makeCategory('cat-salary', 'Salário', 'income'),
     makeCategory('cat-transfer', 'Transferências', 'transfer'),
   ]);
+  const plans = new InMemoryInstallmentPlanRepository();
   const rules = new InMemoryCategoryRuleRepository([
     makeRule('rule-transfer', 'pagamento de fatura', 'cat-transfer', 1),
     makeRule('rule-uber', 'uber', 'cat-transport'),
@@ -43,9 +46,10 @@ function setup() {
     new ParserRegistry(),
     new SequentialIds(),
     new Sha256Hasher(),
+    new LinkInstallmentsService(plans),
   );
 
-  return { useCase, accounts, imports, transactions, categories, rules };
+  return { useCase, accounts, imports, transactions, categories, rules, plans };
 }
 
 const baseInput = {

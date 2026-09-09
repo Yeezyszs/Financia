@@ -4,6 +4,8 @@ import type {
   Category,
   ImportRecord,
   ImportResult,
+  InstallmentPlan,
+  InstallmentsOverview,
   NetWorth,
   Overview,
   Snapshot,
@@ -184,6 +186,25 @@ export const api = {
 
     return response.text();
   },
+
+  installments: () => request<InstallmentsOverview>('/installments'),
+
+  createInstallmentPlan: (body: {
+    accountId: string;
+    description: string;
+    totalCents: number;
+    installments: number;
+    firstChargeOn: string;
+    categoryId?: string | null;
+    merchantKey?: string;
+  }) =>
+    request<{ plan: InstallmentPlan; linked: number }>('/installments', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+
+  deleteInstallmentPlan: (id: string) =>
+    request<{ deleted: true }>(`/installments/${id}`, { method: 'DELETE' }),
 
   imports: () => request<ImportRecord[]>('/imports'),
 
