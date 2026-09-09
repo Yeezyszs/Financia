@@ -207,6 +207,15 @@ export function App(): ReactNode {
         ) : null}
       </main>
 
+      {/* Qual versão está no ar. Fica discreto, mas é a resposta para
+          "a mudança não apareceu": se o commit aqui não é o último, o
+          código chegou ao GitHub e parou antes de virar site. */}
+      <footer className="build-stamp">
+        <span title={`ramo ${__BUILD__.ref} · build de ${__BUILD__.data}`}>
+          versão {__BUILD__.sha} · {new Date(__BUILD__.data).toLocaleDateString('pt-BR')}
+        </span>
+      </footer>
+
       {isMobile ? (
         <nav className="tabbar" aria-label="Navegação principal">
           {SCREENS.map((item) => (

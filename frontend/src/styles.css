@@ -160,6 +160,24 @@ main {
   padding: 28px 32px 48px;
 }
 
+/* Carimbo do build: presente para quem procurar, invisível para quem
+   não está procurando. Some no celular, onde a barra do rodapé manda. */
+.build-stamp {
+  max-width: 1340px;
+  margin: -32px auto 0;
+  padding: 0 32px 24px;
+  font-size: 0.7rem;
+  color: var(--text-3);
+  text-align: right;
+  opacity: 0.65;
+}
+
+@media (max-width: 760px) {
+  .build-stamp {
+    display: none;
+  }
+}
+
 /* -------------------------------------------------------- navegação */
 .topbar {
   position: sticky;

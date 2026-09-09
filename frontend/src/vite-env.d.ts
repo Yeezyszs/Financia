@@ -8,3 +8,6 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** Carimbo injetado pelo Vite no build — veja `vite.config.ts`. */
+declare const __BUILD__: { sha: string; ref: string; data: string };
