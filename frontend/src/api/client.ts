@@ -197,6 +197,7 @@ export const api = {
     firstChargeOn: string;
     categoryId?: string | null;
     merchantKey?: string;
+    paidCount?: number;
   }) =>
     request<{ plan: InstallmentPlan; linked: number }>('/installments', {
       method: 'POST',
@@ -213,6 +214,7 @@ export const api = {
       installments: number;
       firstChargeOn: string;
       categoryId: string | null;
+      paidCount: number;
     }>,
   ) =>
     request<{ plan: InstallmentPlan; unlinked: number }>(`/installments/${id}`, {

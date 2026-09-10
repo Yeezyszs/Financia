@@ -15,6 +15,7 @@ const createSchema = z.object({
   firstChargeOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   categoryId: z.string().uuid().nullable().optional(),
   merchantKey: z.string().max(120).optional(),
+  paidCount: z.number().int().min(0).max(72).optional(),
 });
 
 const updateSchema = z
@@ -26,6 +27,7 @@ const updateSchema = z
     installments: z.number().int().min(2).max(72),
     firstChargeOn: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     categoryId: z.string().uuid().nullable(),
+    paidCount: z.number().int().min(0).max(72),
   })
   .partial();
 

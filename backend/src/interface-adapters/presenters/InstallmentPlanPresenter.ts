@@ -20,7 +20,9 @@ export const InstallmentPlanPresenter = {
         number: parcela.number,
         dueOn: parcela.dueOn,
         amountCents: parcela.amountCents,
-        paid: parcela.transactionId !== null,
+        paid: parcela.transactionId !== null || parcela.settled,
+        /** Paga sem cobrança no extrato: a tela diz isso em vez de mentir. */
+        settled: parcela.settled,
         // A tela precisa do id para mostrar qual cobrança é, e para
         // deixar trocar o vínculo à mão quando a marca não veio.
         transactionId: parcela.transactionId,

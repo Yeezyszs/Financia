@@ -24,6 +24,7 @@ interface ParcelaRow {
   due_on: string;
   amount_cents: number;
   transaction_id: string | null;
+  settled: boolean;
 }
 
 function montar(plano: PlanoRow, parcelas: ParcelaRow[]): InstallmentPlan {
@@ -47,6 +48,7 @@ function montar(plano: PlanoRow, parcelas: ParcelaRow[]): InstallmentPlan {
           dueOn: p.due_on,
           amountCents: Number(p.amount_cents),
           transactionId: p.transaction_id,
+          settled: p.settled,
         }),
       ),
   });
@@ -114,6 +116,7 @@ export class SupabaseInstallmentPlanRepository implements InstallmentPlanReposit
         due_on: parcela.dueOn,
         amount_cents: parcela.amountCents,
         transaction_id: parcela.transactionId,
+        settled: parcela.settled,
       })),
     );
     if (erroParcelas) throw erroParcelas;
@@ -159,6 +162,7 @@ export class SupabaseInstallmentPlanRepository implements InstallmentPlanReposit
         due_on: parcela.dueOn,
         amount_cents: parcela.amountCents,
         transaction_id: parcela.transactionId,
+        settled: parcela.settled,
       })),
       { onConflict: 'id' },
     );

@@ -16,6 +16,8 @@ export interface UpdateInstallmentPlanInput {
   installments?: number;
   firstChargeOn?: string;
   categoryId?: string | null;
+  /** Quantas das primeiras parcelas contam como pagas sem lançamento. */
+  paidCount?: number;
 }
 
 /**
@@ -64,6 +66,13 @@ export class UpdateInstallmentPlanUseCase {
     const calendario = gerarParcelas({ totalCents, installments, firstChargeOn });
     const anteriores = new Map(atual.parcelas.map((parcela) => [parcela.number, parcela]));
 
+    if (input.paidCount !== undefined && (input.paidCount < 0 || input.paidCount > installments)) {
+      throw new DomainError(
+        `Parcelas pagas precisa estar entre 0 e ${installments}`,
+        'INVALID_PLAN',
+      );
+    }
+
     const parcelas = calendario.map((parcela): Installment => {
       const antes = anteriores.get(parcela.number);
       return {
@@ -75,6 +84,13 @@ export class UpdateInstallmentPlanUseCase {
         // continua sendo a cobrança da parcela 3 mesmo que o valor do
         // plano inteiro estivesse errado.
         transactionId: antes?.transactionId ?? null,
+        // A baixa manual é contada do começo: "já paguei 5" quer dizer
+        // as cinco primeiras. Quem não mandou o campo não quis mexer
+        // nele, e o que estava marcado continua marcado.
+        settled:
+          input.paidCount === undefined
+            ? (antes?.settled ?? false)
+            : parcela.number <= input.paidCount,
       };
     });
 

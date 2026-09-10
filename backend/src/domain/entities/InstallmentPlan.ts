@@ -8,6 +8,14 @@ export interface Installment {
   amountCents: number;
   /** Preenchido quando a linha da fatura chegou e foi reconhecida. */
   transactionId: string | null;
+  /**
+   * Baixa dada à mão, sem cobrança no extrato. É o caso de cadastrar
+   * uma compra que já vem sendo paga há meses, de faturas que nunca
+   * foram importadas — a pessoa sabe que pagou, o app não tem como
+   * saber, e inventar transações para representar isso sujaria o
+   * extrato, que é registro do que o banco disse.
+   */
+  settled: boolean;
 }
 
 export interface InstallmentPlanProps {
@@ -75,13 +83,13 @@ export class InstallmentPlan {
     return this.props.parcelas;
   }
 
-  /** Parcelas cuja linha na fatura já foi reconhecida. */
+  /** Paga é ter cobrança reconhecida no extrato ou baixa dada à mão. */
   get pagas(): Installment[] {
-    return this.props.parcelas.filter((p) => p.transactionId !== null);
+    return this.props.parcelas.filter((p) => p.transactionId !== null || p.settled);
   }
 
   get emAberto(): Installment[] {
-    return this.props.parcelas.filter((p) => p.transactionId === null);
+    return this.props.parcelas.filter((p) => p.transactionId === null && !p.settled);
   }
 
   /**

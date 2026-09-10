@@ -21,6 +21,12 @@ export interface CreateInstallmentPlanInput {
    * a descrição faz as vezes.
    */
   merchantKey?: string;
+  /**
+   * Quantas das primeiras parcelas já foram pagas. Serve para cadastrar
+   * uma compra que já vem correndo há meses, cujas faturas nunca foram
+   * importadas — sem isso o app diria que falta pagar o valor inteiro.
+   */
+  paidCount?: number;
 }
 
 export class CreateInstallmentPlanUseCase {
@@ -63,6 +69,7 @@ export class CreateInstallmentPlanUseCase {
         dueOn: parcela.dueOn,
         amountCents: parcela.amountCents,
         transactionId: null,
+        settled: parcela.number <= (input.paidCount ?? 0),
       })),
     });
 

@@ -93,28 +93,12 @@ export function PlanoParcelas({
             <span className="parcela-data">{date(parcela.dueOn)}</span>
             <span className="parcela-valor">{money(parcela.amountCents)}</span>
 
+            {/* Baixa manual e cobrança reconhecida contam igual no
+                saldo, mas não são a mesma coisa: uma é o que o banco
+                disse, a outra é o que a pessoa lembrou. A linha diz qual
+                das duas é. */}
             <span className="parcela-vinculo">
-              {parcela.transactionId ? (
-                <>
-                  <span className="tag tag-parcela">paga</span>{' '}
-                  {ligada ? (
-                    <span title={ligada.description}>
-                      {ligada.description} · {date(ligada.occurredOn)}
-                    </span>
-                  ) : (
-                    // A cobrança existe, mas está fora das 60 que vieram
-                    // — não é motivo para a linha mentir que está solta.
-                    <span>lançamento ligado</span>
-                  )}
-                  <button
-                    className="link acao"
-                    disabled={salvando}
-                    onClick={() => void ligar(parcela.number, null)}
-                  >
-                    desligar
-                  </button>
-                </>
-              ) : escolhendo === parcela.number ? (
+              {escolhendo === parcela.number ? (
                 <span className="parcela-escolha">
                   <input
                     value={busca}
@@ -152,6 +136,40 @@ export function PlanoParcelas({
                     cancelar
                   </button>
                 </span>
+              ) : parcela.settled && !parcela.transactionId ? (
+                <>
+                  <span className="tag tag-parcela">paga</span>
+                  <span>marcada como paga, sem lançamento no extrato</span>
+                  <button
+                    className="link acao"
+                    onClick={() => {
+                      setBusca('');
+                      setEscolhendo(parcela.number);
+                    }}
+                  >
+                    ligar a um lançamento
+                  </button>
+                </>
+              ) : parcela.transactionId ? (
+                <>
+                  <span className="tag tag-parcela">paga</span>{' '}
+                  {ligada ? (
+                    <span title={ligada.description}>
+                      {ligada.description} · {date(ligada.occurredOn)}
+                    </span>
+                  ) : (
+                    // A cobrança existe, mas está fora das 60 que vieram
+                    // — não é motivo para a linha mentir que está solta.
+                    <span>lançamento ligado</span>
+                  )}
+                  <button
+                    className="link acao"
+                    disabled={salvando}
+                    onClick={() => void ligar(parcela.number, null)}
+                  >
+                    desligar
+                  </button>
+                </>
               ) : (
                 <button
                   className="link acao"

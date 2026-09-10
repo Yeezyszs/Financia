@@ -208,3 +208,77 @@ describe('vínculo feito à mão', () => {
     ).rejects.toThrow();
   });
 });
+
+describe('parcelas já pagas sem lançamento', () => {
+  it('cadastra uma compra que já vem correndo há meses', async () => {
+    // O caso real: a moto está sendo paga desde março, e as faturas
+    // desses meses nunca foram importadas. Sem isto o app diria que
+    // falta pagar o valor inteiro.
+    const { criar } = montar();
+    const { plan } = await criar.execute({ ...PLANO, installments: 6, paidCount: 4 });
+
+    expect(plan.pagas).toHaveLength(4);
+    expect(plan.emAberto).toHaveLength(2);
+    expect(plan.remainingCents).toBe(20600);
+    // Nenhuma transação foi inventada para representar isso.
+    expect(plan.parcelas.every((p) => p.transactionId === null)).toBe(true);
+  });
+
+  it('a baixa manual não impede o reconhecimento automático depois', async () => {
+    const linha = compra('t7', 'Moto - Parcela 2/6', -10300, '2026-04-05');
+    const { criar, ligar } = montar([linha]);
+    const { plan } = await criar.execute({ ...PLANO, installments: 6, paidCount: 3 });
+
+    const atualizado = await ligar.execute({
+      userId: USER_ID,
+      planId: plan.id,
+      number: 2,
+      transactionId: 't7',
+    });
+
+    expect(atualizado.parcelas[1]?.transactionId).toBe('t7');
+    expect(atualizado.pagas).toHaveLength(3);
+  });
+
+  it('corrigir quantas foram pagas conta sempre do começo', async () => {
+    const { criar, editar } = montar();
+    const { plan } = await criar.execute({ ...PLANO, installments: 6, paidCount: 4 });
+
+    const { plan: corrigido } = await editar.execute({
+      userId: USER_ID,
+      planId: plan.id,
+      paidCount: 2,
+    });
+
+    expect(corrigido.parcelas.map((p) => p.settled)).toEqual([
+      true,
+      true,
+      false,
+      false,
+      false,
+      false,
+    ]);
+  });
+
+  it('editar sem falar de pagas não desmarca o que estava marcado', async () => {
+    const { criar, editar } = montar();
+    const { plan } = await criar.execute({ ...PLANO, installments: 6, paidCount: 4 });
+
+    const { plan: renomeado } = await editar.execute({
+      userId: USER_ID,
+      planId: plan.id,
+      description: 'Moto do trabalho',
+    });
+
+    expect(renomeado.pagas).toHaveLength(4);
+  });
+
+  it('recusa mais pagas do que parcelas', async () => {
+    const { criar, editar } = montar();
+    const { plan } = await criar.execute({ ...PLANO, installments: 6 });
+
+    await expect(
+      editar.execute({ userId: USER_ID, planId: plan.id, paidCount: 9 }),
+    ).rejects.toThrow();
+  });
+});

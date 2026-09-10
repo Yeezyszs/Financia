@@ -25,6 +25,8 @@ interface Rascunho {
   /** O valor de UMA parcela, que é o número que a fatura mostra. */
   valorDaParcela: string;
   quantas: string;
+  /** Quantas das primeiras já foram pagas, contadas do começo. */
+  jaPagas: string;
   primeira: string;
   categoryId: string;
   /**
@@ -73,8 +75,8 @@ function FormularioPlano({
   comChave: boolean;
   salvando: boolean;
   rotuloSalvar: string;
-  /** Recebe o rascunho e o total já calculado, em centavos. */
-  onSalvar: (valores: Rascunho, totalCents: number) => void;
+  /** Recebe o rascunho, o total em centavos e quantas já foram pagas. */
+  onSalvar: (valores: Rascunho, totalCents: number, jaPagas: number) => void;
   onCancelar: () => void;
 }): ReactNode {
   const [valores, setValores] = useState<Rascunho>(rascunho);
@@ -90,6 +92,7 @@ function FormularioPlano({
   const prefixo = comChave ? 'edit' : 'novo';
   const parcelas = Number(valores.quantas);
   const daParcela = lerValor(valores.valorDaParcela);
+  const pagas = Math.min(Math.max(Number(valores.jaPagas) || 0, 0), parcelas || 0);
   const total =
     recalcular || valores.totalGravado === null
       ? daParcela && parcelas >= 2
@@ -168,6 +171,18 @@ function FormularioPlano({
           />
         </div>
 
+        <div className="field" style={{ minWidth: 110 }}>
+          <label htmlFor={`${prefixo}-pagas`}>Já paguei</label>
+          <input
+            id={`${prefixo}-pagas`}
+            type="number"
+            min={0}
+            max={Number.isFinite(parcelas) ? parcelas : 72}
+            value={valores.jaPagas}
+            onChange={(e) => mudar('jaPagas', e.target.value)}
+          />
+        </div>
+
         <div className="field">
           <label htmlFor={`${prefixo}-primeira`}>Primeira cobrança</label>
           <input
@@ -202,6 +217,13 @@ function FormularioPlano({
         <p className="card-sub" style={{ marginTop: 0 }}>
           {parcelas}x de <b>{money(Math.round(total / parcelas))}</b> dá <b>{money(total)}</b> no
           total.
+          {pagas > 0 ? (
+            <>
+              {' '}
+              Com {pagas} já {pagas === 1 ? 'paga' : 'pagas'}, faltam{' '}
+              <b>{money(Math.round(total / parcelas) * (parcelas - pagas))}</b>.
+            </>
+          ) : null}
         </p>
       ) : null}
 
@@ -209,7 +231,7 @@ function FormularioPlano({
         <button
           className="primary"
           disabled={salvando || !valores.description.trim() || !total || !valores.accountId}
-          onClick={() => onSalvar(valores, total ?? 0)}
+          onClick={() => onSalvar(valores, total ?? 0, pagas)}
         >
           {salvando ? 'Salvando...' : rotuloSalvar}
         </button>
@@ -258,7 +280,7 @@ export function Installments({
   // caminho errado como padrão.
   const cartaoPadrao = (accounts.find((conta) => conta.type === 'credit_card') ?? accounts[0])?.id;
 
-  async function criar(valores: Rascunho, total: number): Promise<void> {
+  async function criar(valores: Rascunho, total: number, jaPagas: number): Promise<void> {
     if (!total) {
       setErro('Valor da parcela inválido. Use algo como 103,00');
       return;
@@ -273,6 +295,7 @@ export function Installments({
         totalCents: total,
         installments: Number(valores.quantas),
         firstChargeOn: valores.primeira,
+        paidCount: jaPagas,
         ...(valores.categoryId ? { categoryId: valores.categoryId } : {}),
       });
 
@@ -295,7 +318,12 @@ export function Installments({
     }
   }
 
-  async function salvarEdicao(planoId: string, valores: Rascunho, total: number): Promise<void> {
+  async function salvarEdicao(
+    planoId: string,
+    valores: Rascunho,
+    total: number,
+    jaPagas: number,
+  ): Promise<void> {
     if (!total) {
       setErro('Valor da parcela inválido. Use algo como 103,00');
       return;
@@ -312,6 +340,7 @@ export function Installments({
         installments: Number(valores.quantas),
         firstChargeOn: valores.primeira,
         categoryId: valores.categoryId || null,
+        paidCount: jaPagas,
       });
 
       setEditando(null);
@@ -440,7 +469,7 @@ export function Installments({
       {criando && cartaoPadrao ? (
         <FormularioPlano
           titulo="Nova compra parcelada"
-          subtitulo="Escreva a descrição como ela aparece na fatura — é por ela que as cobranças são reconhecidas. O total o app calcula."
+          subtitulo="Escreva a descrição como ela aparece na fatura — é por ela que as cobranças são reconhecidas. O total o app calcula; se a compra já vem sendo paga, diga quantas parcelas já foram."
           comChave={false}
           rascunho={{
             accountId: cartaoPadrao,
@@ -448,6 +477,7 @@ export function Installments({
             merchantKey: '',
             valorDaParcela: '',
             quantas: '2',
+            jaPagas: '0',
             primeira: new Date().toISOString().slice(0, 10),
             categoryId: '',
             totalGravado: null,
@@ -456,7 +486,7 @@ export function Installments({
           categories={categories}
           salvando={salvando}
           rotuloSalvar="Criar parcelamento"
-          onSalvar={(valores, total) => void criar(valores, total)}
+          onSalvar={(valores, total, jaPagas) => void criar(valores, total, jaPagas)}
           onCancelar={() => setCriando(false)}
         />
       ) : null}
@@ -495,6 +525,7 @@ export function Installments({
                     merchantKey: plano.merchantKey,
                     valorDaParcela: comoTexto(plano.monthlyCents),
                     quantas: String(plano.installments),
+                    jaPagas: String(plano.parcelas.filter((p) => p.settled).length),
                     primeira: plano.firstChargeOn,
                     categoryId: plano.categoryId ?? '',
                     totalGravado: plano.totalCents,
@@ -503,7 +534,9 @@ export function Installments({
                   categories={categories}
                   salvando={salvando}
                   rotuloSalvar="Salvar correção"
-                  onSalvar={(valores, total) => void salvarEdicao(plano.id, valores, total)}
+                  onSalvar={(valores, total, jaPagas) =>
+                    void salvarEdicao(plano.id, valores, total, jaPagas)
+                  }
                   onCancelar={() => setEditando(null)}
                 />
               ) : (

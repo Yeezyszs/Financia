@@ -88,6 +88,8 @@ export interface Parcela {
   paid: boolean;
   /** A cobrança do extrato que quitou esta parcela, quando há uma. */
   transactionId: string | null;
+  /** Paga por baixa manual, sem cobrança no extrato. */
+  settled: boolean;
 }
 
 export interface InstallmentPlan {
