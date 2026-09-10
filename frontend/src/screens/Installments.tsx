@@ -22,10 +22,17 @@ interface Rascunho {
   accountId: string;
   description: string;
   merchantKey: string;
-  valor: string;
+  /** O valor de UMA parcela, que é o número que a fatura mostra. */
+  valorDaParcela: string;
   quantas: string;
   primeira: string;
   categoryId: string;
+  /**
+   * O total já gravado, em centavos. Serve para não recalcular o que
+   * ninguém pediu: um plano antigo de R$ 100 em 3x guarda 10000, e
+   * 3333 × 3 daria 9999 — um centavo a menos por abrir a tela.
+   */
+  totalGravado: number | null;
 }
 
 /** Centavos a partir do que foi digitado: "1.234,56" e "1234.56" valem. */
@@ -66,17 +73,29 @@ function FormularioPlano({
   comChave: boolean;
   salvando: boolean;
   rotuloSalvar: string;
-  onSalvar: (valores: Rascunho) => void;
+  /** Recebe o rascunho e o total já calculado, em centavos. */
+  onSalvar: (valores: Rascunho, totalCents: number) => void;
   onCancelar: () => void;
 }): ReactNode {
   const [valores, setValores] = useState<Rascunho>(rascunho);
-  const mudar = (campo: keyof Rascunho, valor: string): void =>
+  // Enquanto ninguém encostar no valor ou na quantidade, o total é o que
+  // já estava gravado. Só o que a pessoa mexeu é recalculado.
+  const [recalcular, setRecalcular] = useState(rascunho.totalGravado === null);
+
+  const mudar = (campo: keyof Rascunho, valor: string): void => {
+    if (campo === 'valorDaParcela' || campo === 'quantas') setRecalcular(true);
     setValores((atual) => ({ ...atual, [campo]: valor }));
+  };
 
   const prefixo = comChave ? 'edit' : 'novo';
   const parcelas = Number(valores.quantas);
-  const total = lerValor(valores.valor);
-  const porMes = total && parcelas >= 2 ? Math.round(total / parcelas) : null;
+  const daParcela = lerValor(valores.valorDaParcela);
+  const total =
+    recalcular || valores.totalGravado === null
+      ? daParcela && parcelas >= 2
+        ? daParcela * parcelas
+        : null
+      : valores.totalGravado;
 
   return (
     <div className="card" style={{ marginBottom: 18 }}>
@@ -127,13 +146,13 @@ function FormularioPlano({
         </div>
 
         <div className="field">
-          <label htmlFor={`${prefixo}-total`}>Valor total</label>
+          <label htmlFor={`${prefixo}-parcela`}>Valor da parcela</label>
           <input
-            id={`${prefixo}-total`}
+            id={`${prefixo}-parcela`}
             inputMode="decimal"
-            value={valores.valor}
-            onChange={(e) => mudar('valor', e.target.value)}
-            placeholder="1.234,56"
+            value={valores.valorDaParcela}
+            onChange={(e) => mudar('valorDaParcela', e.target.value)}
+            placeholder="103,00"
           />
         </div>
 
@@ -176,11 +195,13 @@ function FormularioPlano({
         </div>
       </div>
 
-      {/* Confundir o valor da parcela com o total é o erro fácil aqui, e
-          ele só aparece meses depois. A conta feita na hora denuncia. */}
-      {porMes ? (
+      {/* O total é conta, não pergunta: quem tem a fatura na mão tem o
+          valor da parcela. Mostrado porque é ele que vai para o banco —
+          e porque um zero a mais na parcela salta aos olhos aqui. */}
+      {total ? (
         <p className="card-sub" style={{ marginTop: 0 }}>
-          Dá <b>{money(porMes)}</b> por mês em {parcelas}x.
+          {parcelas}x de <b>{money(Math.round(total / parcelas))}</b> dá <b>{money(total)}</b> no
+          total.
         </p>
       ) : null}
 
@@ -188,7 +209,7 @@ function FormularioPlano({
         <button
           className="primary"
           disabled={salvando || !valores.description.trim() || !total || !valores.accountId}
-          onClick={() => onSalvar(valores)}
+          onClick={() => onSalvar(valores, total ?? 0)}
         >
           {salvando ? 'Salvando...' : rotuloSalvar}
         </button>
@@ -237,10 +258,9 @@ export function Installments({
   // caminho errado como padrão.
   const cartaoPadrao = (accounts.find((conta) => conta.type === 'credit_card') ?? accounts[0])?.id;
 
-  async function criar(valores: Rascunho): Promise<void> {
-    const total = lerValor(valores.valor);
+  async function criar(valores: Rascunho, total: number): Promise<void> {
     if (!total) {
-      setErro('Valor total inválido. Use algo como 1.234,56');
+      setErro('Valor da parcela inválido. Use algo como 103,00');
       return;
     }
 
@@ -275,10 +295,9 @@ export function Installments({
     }
   }
 
-  async function salvarEdicao(planoId: string, valores: Rascunho): Promise<void> {
-    const total = lerValor(valores.valor);
+  async function salvarEdicao(planoId: string, valores: Rascunho, total: number): Promise<void> {
     if (!total) {
-      setErro('Valor total inválido. Use algo como 1.234,56');
+      setErro('Valor da parcela inválido. Use algo como 103,00');
       return;
     }
 
@@ -421,22 +440,23 @@ export function Installments({
       {criando && cartaoPadrao ? (
         <FormularioPlano
           titulo="Nova compra parcelada"
-          subtitulo="Escreva a descrição como ela aparece na fatura — é por ela que as cobranças são reconhecidas."
+          subtitulo="Escreva a descrição como ela aparece na fatura — é por ela que as cobranças são reconhecidas. O total o app calcula."
           comChave={false}
           rascunho={{
             accountId: cartaoPadrao,
             description: '',
             merchantKey: '',
-            valor: '',
+            valorDaParcela: '',
             quantas: '2',
             primeira: new Date().toISOString().slice(0, 10),
             categoryId: '',
+            totalGravado: null,
           }}
           accounts={accounts}
           categories={categories}
           salvando={salvando}
           rotuloSalvar="Criar parcelamento"
-          onSalvar={(valores) => void criar(valores)}
+          onSalvar={(valores, total) => void criar(valores, total)}
           onCancelar={() => setCriando(false)}
         />
       ) : null}
@@ -473,16 +493,17 @@ export function Installments({
                     accountId: plano.accountId,
                     description: plano.description,
                     merchantKey: plano.merchantKey,
-                    valor: comoTexto(plano.totalCents),
+                    valorDaParcela: comoTexto(plano.monthlyCents),
                     quantas: String(plano.installments),
                     primeira: plano.firstChargeOn,
                     categoryId: plano.categoryId ?? '',
+                    totalGravado: plano.totalCents,
                   }}
                   accounts={accounts}
                   categories={categories}
                   salvando={salvando}
                   rotuloSalvar="Salvar correção"
-                  onSalvar={(valores) => void salvarEdicao(plano.id, valores)}
+                  onSalvar={(valores, total) => void salvarEdicao(plano.id, valores, total)}
                   onCancelar={() => setEditando(null)}
                 />
               ) : (
