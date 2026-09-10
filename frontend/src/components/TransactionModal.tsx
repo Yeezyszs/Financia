@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api } from '../api/client.js';
-import type { Category, Transaction } from '../api/types.js';
+import type { Category, InstallmentPlan, InstallmentsOverview, Transaction } from '../api/types.js';
 import { date, money } from '../format.js';
 import { lerParcela, primeiraCobranca, semMarca } from '../parcela.js';
 import { CategoryPicker } from './CategoryPicker.js';
@@ -49,6 +49,11 @@ export function TransactionModal({
   const [criando, setCriando] = useState(false);
   const [criandoPlano, setCriandoPlano] = useState(false);
   const [planoFeito, setPlanoFeito] = useState<string | null>(null);
+  const [parcelamentos, setParcelamentos] = useState<InstallmentsOverview | null>(null);
+  const [ligando, setLigando] = useState(false);
+  const [escolhendo, setEscolhendo] = useState(false);
+  const [planoAlvo, setPlanoAlvo] = useState('');
+  const [numeroAlvo, setNumeroAlvo] = useState('');
   const [nomeNovo, setNomeNovo] = useState('');
   const [notas, setNotas] = useState(transaction.notes ?? '');
   const [estadoNotas, setEstadoNotas] = useState<'parado' | 'salvando' | 'salvo'>('parado');
@@ -70,10 +75,37 @@ export function TransactionModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Os parcelamentos vêm junto com a caixa: é o que permite dizer, sem
+  // clique nenhum, que esta cobrança já é a parcela 3 de alguma compra.
+  const recarregarPlanos = useCallback(() => {
+    api
+      .installments()
+      .then(setParcelamentos)
+      .catch(() => setParcelamentos(null));
+  }, []);
+
+  useEffect(recarregarPlanos, [recarregarPlanos]);
+
   const direcao: 'expense' | 'income' =
     otimista.direction ?? (transaction.amountCents > 0 ? 'income' : 'expense');
   const naoContar = otimista.isTransfer ?? transaction.isTransfer;
   const parcela = lerParcela(transaction.description);
+
+  // Em que parcela esta cobrança está hoje, se estiver em alguma.
+  const vinculo = (parcelamentos?.plans ?? [])
+    .flatMap((plano) => plano.parcelas.map((p) => ({ plano, parcela: p })))
+    .find((par) => par.parcela.transactionId === transaction.id);
+
+  // Com vários parcelamentos abertos, o que tem parcela do mesmo valor
+  // desta cobrança é quase sempre o certo — vai primeiro na lista, e o
+  // padrão do seletor deixa de ser sorte.
+  const combina = (plano: InstallmentPlan): boolean =>
+    Math.abs(plano.monthlyCents - Math.abs(transaction.amountCents)) <= 1;
+
+  const abertos = (parcelamentos?.plans ?? [])
+    .filter((plano) => !plano.settled)
+    .sort((a, b) => Number(combina(b)) - Number(combina(a)));
+  const planoSelecionado = abertos.find((plano) => plano.id === planoAlvo) ?? abertos[0];
 
   async function salvarNotas(): Promise<void> {
     const texto = atual.current.trim();
@@ -151,6 +183,34 @@ export function TransactionModal({
       setErro(err instanceof Error ? err.message : 'Não consegui criar o parcelamento.');
     } finally {
       setCriandoPlano(false);
+    }
+  }
+
+  /**
+   * O vínculo no sentido contrário: partindo da cobrança, apontar de
+   * que parcela ela é.
+   *
+   * O reconhecimento automático só enxerga o que a fatura marca com
+   * "4/6". Um financiamento pago por Pix chega como "Transferência
+   * enviada pelo Pix - BANCO TAL", sem nada que diga que aquilo é a
+   * terceira de quarenta e oito — e é justamente o parcelamento mais
+   * caro que fica de fora. Daqui a pessoa aponta, e o app passa a saber.
+   */
+  async function mexerNoVinculo(
+    planId: string,
+    numero: number,
+    transactionId: string | null,
+  ): Promise<void> {
+    setLigando(true);
+    setErro(null);
+    try {
+      await api.linkParcela(planId, numero, transactionId);
+      setEscolhendo(false);
+      recarregarPlanos();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Não consegui mudar o vínculo da parcela.');
+    } finally {
+      setLigando(false);
     }
   }
 
@@ -271,7 +331,84 @@ export function TransactionModal({
 
         {/* Onde a pessoa procura parcela é na compra, não numa aba
             separada. A aba mostra o conjunto; aqui é onde ela nasce. */}
-        {parcela ? (
+        {vinculo ? (
+          <div className="field parcelamento">
+            <span className="parcelamento-titulo">
+              Parcela {vinculo.parcela.number} de {vinculo.plano.installments}
+            </span>
+            <p className="parcelamento-texto">
+              Esta cobrança está contando como uma parcela de <b>{vinculo.plano.description}</b>,
+              com vencimento em {date(vinculo.parcela.dueOn)}.
+            </p>
+            <button
+              className="ghost"
+              disabled={ligando}
+              onClick={() => void mexerNoVinculo(vinculo.plano.id, vinculo.parcela.number, null)}
+            >
+              {ligando ? 'Soltando...' : 'Soltar desta parcela'}
+            </button>
+          </div>
+        ) : escolhendo && planoSelecionado ? (
+          <div className="field parcelamento">
+            <span className="parcelamento-titulo">De qual parcela é esta cobrança?</span>
+
+            <select
+              aria-label="Parcelamento"
+              value={planoSelecionado.id}
+              onChange={(e) => {
+                setPlanoAlvo(e.target.value);
+                setNumeroAlvo('');
+              }}
+            >
+              {abertos.map((plano) => (
+                <option key={plano.id} value={plano.id}>
+                  {plano.description} · {plano.paidCount}/{plano.installments}
+                </option>
+              ))}
+            </select>
+
+            <select
+              aria-label="Parcela"
+              value={
+                numeroAlvo || String(planoSelecionado.parcelas.find((p) => !p.paid)?.number ?? 1)
+              }
+              onChange={(e) => setNumeroAlvo(e.target.value)}
+            >
+              {planoSelecionado.parcelas.map((p) => (
+                <option key={p.number} value={p.number}>
+                  {p.number}/{planoSelecionado.installments} · vence {date(p.dueOn)} ·{' '}
+                  {money(p.amountCents)}
+                  {p.transactionId
+                    ? ' (já tem lançamento)'
+                    : p.settled
+                      ? ' (marcada como paga)'
+                      : ''}
+                </option>
+              ))}
+            </select>
+
+            <div className="row">
+              <button
+                className="primary"
+                disabled={ligando}
+                onClick={() =>
+                  void mexerNoVinculo(
+                    planoSelecionado.id,
+                    Number(
+                      numeroAlvo || (planoSelecionado.parcelas.find((p) => !p.paid)?.number ?? 1),
+                    ),
+                    transaction.id,
+                  )
+                }
+              >
+                {ligando ? 'Ligando...' : 'Ligar a esta parcela'}
+              </button>
+              <button className="ghost" disabled={ligando} onClick={() => setEscolhendo(false)}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : parcela ? (
           <div className="field parcelamento">
             <span className="parcelamento-titulo">
               Parcela {parcela.numero} de {parcela.total}
@@ -298,6 +435,19 @@ export function TransactionModal({
                 </button>
               </>
             )}
+          </div>
+        ) : abertos.length > 0 ? (
+          /* Sem marca na descrição não há como adivinhar — mas a pessoa
+             sabe. Um financiamento pago por Pix é exatamente isto. */
+          <div className="field parcelamento">
+            <span className="parcelamento-titulo">Isto é uma parcela?</span>
+            <p className="parcelamento-texto">
+              A fatura não marcou esta cobrança como parcela, então o reconhecimento automático não
+              a encontrou. Se ela for de uma compra parcelada, aponte qual.
+            </p>
+            <button className="ghost" onClick={() => setEscolhendo(true)}>
+              Ligar a uma parcela
+            </button>
           </div>
         ) : null}
 
