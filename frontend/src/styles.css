@@ -883,6 +883,43 @@ select.card-control {
   cursor: help;
 }
 
+/* A marca de parcela ganha cor porque é a única etiqueta que fala do
+   futuro: as outras descrevem o lançamento, esta diz que ainda vem
+   mais. */
+.tag-parcela {
+  background: var(--gold-light);
+  border-color: transparent;
+  color: var(--gold);
+}
+
+/* Bloco de parcelamento no modal. Emoldurado para não virar mais uma
+   linha do formulário: é uma oferta, não um campo a preencher. */
+.parcelamento {
+  gap: 7px;
+  padding: 13px 14px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-2);
+}
+
+.parcelamento-titulo {
+  font-family: var(--font-d);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.parcelamento-texto {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.parcelamento button {
+  align-self: flex-start;
+}
+
 select.category-picker {
   padding: 4px 9px;
   font-size: 0.75rem;

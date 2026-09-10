@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { lerParcela } from '../../../src/domain/analysis/InstallmentTag.js';
 
@@ -33,5 +34,26 @@ describe('lerParcela', () => {
     expect(lerParcela('Netflix.com')).toBeNull();
     expect(lerParcela('AUTO POSTO M   M')).toBeNull();
     expect(lerParcela('Transferência recebida - SALARIO')).toBeNull();
+  });
+});
+
+/**
+ * A tela repete esta leitura para marcar a linha e propor o cadastro
+ * sem ida ao servidor. Repetição a gente aceita; divergência silenciosa,
+ * não — uma marca que o servidor reconhece e a tela ignora (ou o
+ * contrário) é um bug que ninguém vê acontecer.
+ */
+describe('padrões espelhados no frontend', () => {
+  function padroesDe(caminho: string): string {
+    const arquivo = readFileSync(new URL(caminho, import.meta.url), 'utf8');
+    const bloco = /const PADROES = \[(.*?)\];/s.exec(arquivo);
+    expect(bloco, `não achei o bloco PADROES em ${caminho}`).not.toBeNull();
+    return bloco![1]!.replace(/\s+/g, '');
+  }
+
+  it('a cópia do frontend usa exatamente os mesmos padrões', () => {
+    expect(padroesDe('../../../../frontend/src/parcela.ts')).toBe(
+      padroesDe('../../../src/domain/analysis/InstallmentTag.ts'),
+    );
   });
 });

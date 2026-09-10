@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react
 import { api } from '../api/client.js';
 import type { Account, Category, Drill, Transaction } from '../api/types.js';
 import { boundsOfMonth, date, money, monthName, monthOfRange, ultimosMeses } from '../format.js';
+import { lerParcela } from '../parcela.js';
 import { MOBILE, useMediaQuery } from '../useMediaQuery.js';
 import { CategoryPicker } from '../components/CategoryPicker.js';
 import { TransactionModal } from '../components/TransactionModal.js';
@@ -536,6 +537,17 @@ export function Transactions({
                       <span>{date(transaction.occurredOn)}</span>
                       <span aria-hidden="true">·</span>
                       <span>{accountName.get(transaction.accountId) ?? '—'}</span>
+                      {/* A fatura diz "Parcela 4/6" no meio da descrição,
+                          onde ninguém lê. Aqui vira marca, e a linha abre
+                          o cadastro do parcelamento já preenchido. */}
+                      {(() => {
+                        const parcela = lerParcela(transaction.description);
+                        return parcela ? (
+                          <span className="tag tag-parcela">
+                            parcela {parcela.numero}/{parcela.total}
+                          </span>
+                        ) : null;
+                      })()}
                       {transaction.isTransfer ? <span className="tag">transferência</span> : null}
                       {transaction.notes ? (
                         <span className="tag tag-nota" title={transaction.notes}>

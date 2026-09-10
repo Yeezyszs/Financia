@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { api } from '../api/client.js';
 import type { Category, Transaction } from '../api/types.js';
 import { date, money } from '../format.js';
+import { lerParcela, primeiraCobranca, semMarca } from '../parcela.js';
 import { CategoryPicker } from './CategoryPicker.js';
 
 /**
@@ -46,6 +47,8 @@ export function TransactionModal({
   }>({});
 
   const [criando, setCriando] = useState(false);
+  const [criandoPlano, setCriandoPlano] = useState(false);
+  const [planoFeito, setPlanoFeito] = useState<string | null>(null);
   const [nomeNovo, setNomeNovo] = useState('');
   const [notas, setNotas] = useState(transaction.notes ?? '');
   const [estadoNotas, setEstadoNotas] = useState<'parado' | 'salvando' | 'salvo'>('parado');
@@ -70,6 +73,7 @@ export function TransactionModal({
   const direcao: 'expense' | 'income' =
     otimista.direction ?? (transaction.amountCents > 0 ? 'income' : 'expense');
   const naoContar = otimista.isTransfer ?? transaction.isTransfer;
+  const parcela = lerParcela(transaction.description);
 
   async function salvarNotas(): Promise<void> {
     const texto = atual.current.trim();
@@ -112,6 +116,41 @@ export function TransactionModal({
       setErro(err instanceof Error ? err.message : 'Não consegui criar a categoria.');
     } finally {
       setCriando(false);
+    }
+  }
+
+  /**
+   * Cadastra o parcelamento a partir desta cobrança.
+   *
+   * Tudo que o formulário da tela de Parcelas pede já está aqui: a
+   * fatura diz em que parcela estamos e quanto ela custa, e o resto é
+   * multiplicação e contagem de meses para trás. Pedir isso de novo, na
+   * mão, em outra tela, seria só uma forma de perder gente no caminho.
+   */
+  async function criarPlano(): Promise<void> {
+    if (!parcela) return;
+
+    setCriandoPlano(true);
+    setErro(null);
+    try {
+      const { linked } = await api.createInstallmentPlan({
+        accountId: transaction.accountId,
+        description: semMarca(transaction.description),
+        totalCents: Math.abs(transaction.amountCents) * parcela.total,
+        installments: parcela.total,
+        firstChargeOn: primeiraCobranca(transaction.occurredOn, parcela.numero),
+        ...(transaction.categoryId ? { categoryId: transaction.categoryId } : {}),
+      });
+
+      setPlanoFeito(
+        linked > 1
+          ? `Parcelamento criado, e ${linked} cobranças que já estavam no extrato foram reconhecidas.`
+          : 'Parcelamento criado. As próximas cobranças dão baixa sozinhas na importação.',
+      );
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : 'Não consegui criar o parcelamento.');
+    } finally {
+      setCriandoPlano(false);
     }
   }
 
@@ -229,6 +268,38 @@ export function TransactionModal({
             onBlur={() => void salvarNotas()}
           />
         </div>
+
+        {/* Onde a pessoa procura parcela é na compra, não numa aba
+            separada. A aba mostra o conjunto; aqui é onde ela nasce. */}
+        {parcela ? (
+          <div className="field parcelamento">
+            <span className="parcelamento-titulo">
+              Parcela {parcela.numero} de {parcela.total}
+            </span>
+            {planoFeito ? (
+              <p className="parcelamento-texto">
+                {planoFeito} Veja o conjunto na aba <b>Parcelas</b>.
+              </p>
+            ) : (
+              <>
+                <p className="parcelamento-texto">
+                  Cadastrando a compra inteira, o app passa a saber que ainda{' '}
+                  {parcela.total - parcela.numero === 1
+                    ? `falta 1 parcela de ${money(Math.abs(transaction.amountCents))}`
+                    : `faltam ${parcela.total - parcela.numero} parcelas de ${money(
+                        Math.abs(transaction.amountCents),
+                      )}`}{' '}
+                  — e dá baixa em cada uma na importação.
+                </p>
+                <button className="ghost" disabled={criandoPlano} onClick={() => void criarPlano()}>
+                  {criandoPlano
+                    ? 'Cadastrando...'
+                    : `Cadastrar parcelamento de ${money(Math.abs(transaction.amountCents) * parcela.total)} em ${parcela.total}x`}
+                </button>
+              </>
+            )}
+          </div>
+        ) : null}
 
         <label className="check-line">
           <input
