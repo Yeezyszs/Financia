@@ -606,6 +606,13 @@ select.card-control {
   margin-bottom: 18px;
 }
 
+/* Três cartões em vez de quatro. Precisa ser classe e não `style=` na
+   marcação: estilo inline vence media query, e a tela de Parcelas
+   estourou a largura do celular por causa disso. */
+.kpi-row.tres {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .scard {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -832,6 +839,138 @@ select.card-control {
 .parcela-casa.paga {
   background: var(--gold);
   border-color: var(--gold);
+}
+
+/* Um plano aberto deixa de ser uma linha e vira um bloco: a lista de
+   parcelas cresce para baixo, dentro do mesmo cartão. */
+.plano-item {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.plano-topo {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.parcela-tabela {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.parcela-linha {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 2px;
+  font-size: 0.78rem;
+  color: var(--text-2);
+}
+
+.parcela-linha + .parcela-linha {
+  border-top: 1px solid var(--border-2);
+}
+
+.parcela-num {
+  flex: none;
+  min-width: 46px;
+  font-family: var(--font-d);
+  font-weight: 700;
+  color: var(--text);
+}
+
+.parcela-data {
+  flex: none;
+  min-width: 88px;
+  color: var(--text-3);
+}
+
+.parcela-valor {
+  flex: none;
+  min-width: 92px;
+  font-family: var(--font-d);
+  font-weight: 600;
+  text-align: right;
+}
+
+.parcela-vinculo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 200px;
+  color: var(--text-3);
+}
+
+.parcela-escolha {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.parcela-escolha input {
+  flex: 1;
+  min-width: 160px;
+}
+
+/* As opções ficam numa coluna rolável: uma fatura tem dezenas de linhas
+   e a lista não pode empurrar o resto da tela para baixo. */
+.parcela-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  max-height: 216px;
+  overflow-y: auto;
+}
+
+.parcela-opcao {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--text-2);
+  text-align: left;
+  cursor: pointer;
+}
+
+.parcela-opcao:hover:not(:disabled) {
+  border-color: var(--green);
+  background: var(--green-light);
+}
+
+.parcela-opcao > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.parcela-opcao-meta {
+  flex: none;
+  font-family: var(--font-d);
+  color: var(--text-3);
+}
+
+.parcela-vazio {
+  padding: 8px 2px;
+  color: var(--text-3);
 }
 
 /* Pill de categoria: identifica sem competir com a descrição. */
@@ -1513,7 +1652,8 @@ dialog.modal::backdrop {
 
 /* -------------------------------------------------------- responsivo */
 @media (max-width: 1100px) {
-  .kpi-row {
+  .kpi-row,
+  .kpi-row.tres {
     grid-template-columns: repeat(2, 1fr);
   }
   .wide-col {
@@ -1532,7 +1672,8 @@ dialog.modal::backdrop {
 
   /* Dois por linha, e não um: quatro cards empilhados no celular
      empurram tudo o mais para 1.100px abaixo do topo. */
-  .kpi-row {
+  .kpi-row,
+  .kpi-row.tres {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
   }

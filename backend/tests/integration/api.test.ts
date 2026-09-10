@@ -93,6 +93,7 @@ describe('borda HTTP', () => {
       'GET /reports/snapshot',
       'GET /reports/summary',
       'GET /transactions',
+      'PATCH /installments/:id',
       'PATCH /transactions/:id',
       'PATCH /transactions/:id/category',
       'PATCH /transactions/categorize',
@@ -102,6 +103,7 @@ describe('borda HTTP', () => {
       'POST /imports/:id/flip-signs',
       'POST /installments',
       'PUT /accounts/:id/balance',
+      'PUT /installments/:id/parcelas/:numero',
     ]);
   });
 

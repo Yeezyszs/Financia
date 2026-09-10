@@ -319,8 +319,41 @@ export class InMemoryInstallmentPlanRepository implements InstallmentPlanReposit
     this.plans.push(plan);
     return plan;
   }
+  async update(plan: InstallmentPlan) {
+    this.plans = this.plans.map((p) => (p.id === plan.id ? plan : p));
+    return plan;
+  }
   async delete(userId: string, id: string) {
     this.plans = this.plans.filter((p) => !(p.userId === userId && p.id === id));
+  }
+  async setTransaction(input: {
+    userId: string;
+    planId: string;
+    number: number;
+    transactionId: string | null;
+  }) {
+    this.plans = this.plans.map((plano) => {
+      if (plano.userId !== input.userId || plano.id !== input.planId) return plano;
+      const props = plano.toJSON();
+      return new InstallmentPlan({
+        ...props,
+        parcelas: props.parcelas.map((p) =>
+          p.number === input.number ? { ...p, transactionId: input.transactionId } : p,
+        ),
+      });
+    });
+  }
+  async clearTransaction(userId: string, transactionId: string) {
+    this.plans = this.plans.map((plano) => {
+      if (plano.userId !== userId) return plano;
+      const props = plano.toJSON();
+      return new InstallmentPlan({
+        ...props,
+        parcelas: props.parcelas.map((p) =>
+          p.transactionId === transactionId ? { ...p, transactionId: null } : p,
+        ),
+      });
+    });
   }
   async linkTransaction(input: {
     userId: string;

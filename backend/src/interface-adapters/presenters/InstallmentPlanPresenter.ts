@@ -21,6 +21,9 @@ export const InstallmentPlanPresenter = {
         dueOn: parcela.dueOn,
         amountCents: parcela.amountCents,
         paid: parcela.transactionId !== null,
+        // A tela precisa do id para mostrar qual cobrança é, e para
+        // deixar trocar o vínculo à mão quando a marca não veio.
+        transactionId: parcela.transactionId,
       })),
     };
   },

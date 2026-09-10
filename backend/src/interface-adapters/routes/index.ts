@@ -86,6 +86,16 @@ export function buildRoutes(route: ControllerResolver): Router {
     '/installments',
     route((c) => c.installments.create),
   );
+  // A parcela vem antes do plano: `/installments/:id` casaria com
+  // `/installments/<id>/parcelas/3` se viesse primeiro.
+  router.put(
+    '/installments/:id/parcelas/:numero',
+    route((c) => c.installments.link),
+  );
+  router.patch(
+    '/installments/:id',
+    route((c) => c.installments.update),
+  );
   router.delete(
     '/installments/:id',
     route((c) => c.installments.remove),

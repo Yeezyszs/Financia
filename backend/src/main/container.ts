@@ -30,6 +30,8 @@ import { LinkInstallmentsService } from '../application/use-cases/installments/L
 import { CreateInstallmentPlanUseCase } from '../application/use-cases/installments/CreateInstallmentPlanUseCase.js';
 import { ListInstallmentPlansUseCase } from '../application/use-cases/installments/ListInstallmentPlansUseCase.js';
 import { DeleteInstallmentPlanUseCase } from '../application/use-cases/installments/DeleteInstallmentPlanUseCase.js';
+import { UpdateInstallmentPlanUseCase } from '../application/use-cases/installments/UpdateInstallmentPlanUseCase.js';
+import { SetParcelaTransactionUseCase } from '../application/use-cases/installments/SetParcelaTransactionUseCase.js';
 import { InstallmentController } from '../interface-adapters/controllers/InstallmentController.js';
 import { GetFinancialSnapshotUseCase } from '../application/use-cases/insights/GetFinancialSnapshotUseCase.js';
 import { AccountController } from '../interface-adapters/controllers/AccountController.js';
@@ -130,6 +132,8 @@ export function buildControllers(env: Env, accessToken: string): Controllers {
         ids,
       ),
       new DeleteInstallmentPlanUseCase(planRepository),
+      new UpdateInstallmentPlanUseCase(planRepository, accountRepository, ids),
+      new SetParcelaTransactionUseCase(planRepository, transactionRepository),
     ),
   };
 }

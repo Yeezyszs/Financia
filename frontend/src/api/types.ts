@@ -86,6 +86,8 @@ export interface Parcela {
   dueOn: string;
   amountCents: number;
   paid: boolean;
+  /** A cobrança do extrato que quitou esta parcela, quando há uma. */
+  transactionId: string | null;
 }
 
 export interface InstallmentPlan {

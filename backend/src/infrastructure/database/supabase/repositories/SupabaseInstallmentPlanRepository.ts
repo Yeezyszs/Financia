@@ -121,6 +121,52 @@ export class SupabaseInstallmentPlanRepository implements InstallmentPlanReposit
     return plan;
   }
 
+  async update(plan: InstallmentPlan): Promise<InstallmentPlan> {
+    const props = plan.toJSON();
+
+    const { error } = await this.db
+      .from(PLANOS)
+      .update({
+        account_id: props.accountId,
+        description: props.description,
+        merchant_key: props.merchantKey,
+        total_cents: props.totalCents,
+        installments: props.installments,
+        first_charge_on: props.firstChargeOn,
+        category_id: props.categoryId,
+      })
+      .eq('user_id', props.userId)
+      .eq('id', props.id);
+    if (error) throw error;
+
+    // Encurtar o plano tira as parcelas que sobraram do calendário
+    // antigo. Vai antes do upsert porque a unicidade é (plano, número):
+    // deixar para depois arriscaria colidir com o que ainda está lá.
+    const { error: erroSobra } = await this.db
+      .from(PARCELAS)
+      .delete()
+      .eq('user_id', props.userId)
+      .eq('plan_id', props.id)
+      .gt('number', props.installments);
+    if (erroSobra) throw erroSobra;
+
+    const { error: erroParcelas } = await this.db.from(PARCELAS).upsert(
+      props.parcelas.map((parcela) => ({
+        id: parcela.id,
+        user_id: props.userId,
+        plan_id: props.id,
+        number: parcela.number,
+        due_on: parcela.dueOn,
+        amount_cents: parcela.amountCents,
+        transaction_id: parcela.transactionId,
+      })),
+      { onConflict: 'id' },
+    );
+    if (erroParcelas) throw erroParcelas;
+
+    return plan;
+  }
+
   async delete(userId: string, id: string): Promise<void> {
     // As parcelas saem por cascata (`plan_id ... on delete cascade`), e as
     // transações ficam onde estão: elas são fato do extrato, não do plano.
@@ -148,5 +194,31 @@ export class SupabaseInstallmentPlanRepository implements InstallmentPlanReposit
     if (error) throw error;
 
     return (data as { id: string }[]).length > 0;
+  }
+
+  async setTransaction(input: {
+    userId: string;
+    planId: string;
+    number: number;
+    transactionId: string | null;
+  }): Promise<void> {
+    // Sem o `is(null)` do vínculo automático: aqui a pessoa está
+    // corrigindo, e corrigir é justamente sobrescrever.
+    const { error } = await this.db
+      .from(PARCELAS)
+      .update({ transaction_id: input.transactionId })
+      .eq('user_id', input.userId)
+      .eq('plan_id', input.planId)
+      .eq('number', input.number);
+    if (error) throw error;
+  }
+
+  async clearTransaction(userId: string, transactionId: string): Promise<void> {
+    const { error } = await this.db
+      .from(PARCELAS)
+      .update({ transaction_id: null })
+      .eq('user_id', userId)
+      .eq('transaction_id', transactionId);
+    if (error) throw error;
   }
 }

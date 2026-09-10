@@ -203,6 +203,30 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  updateInstallmentPlan: (
+    id: string,
+    body: Partial<{
+      accountId: string;
+      description: string;
+      merchantKey: string;
+      totalCents: number;
+      installments: number;
+      firstChargeOn: string;
+      categoryId: string | null;
+    }>,
+  ) =>
+    request<{ plan: InstallmentPlan; unlinked: number }>(`/installments/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+
+  /** Liga a parcela a uma cobrança do extrato; `null` desliga. */
+  linkParcela: (id: string, numero: number, transactionId: string | null) =>
+    request<{ plan: InstallmentPlan }>(`/installments/${id}/parcelas/${numero}`, {
+      method: 'PUT',
+      body: JSON.stringify({ transactionId }),
+    }),
+
   deleteInstallmentPlan: (id: string) =>
     request<{ deleted: true }>(`/installments/${id}`, { method: 'DELETE' }),
 
