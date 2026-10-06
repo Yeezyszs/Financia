@@ -33,6 +33,13 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
   const [data, setData] = useState<OverviewData | null>(null);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [janela, setJanela] = useState(6);
+  /**
+   * Tamanho do bloco comparado nas variações por categoria. Começa em 3
+   * porque é o recorte que responde a pergunta: um mês contra o mês
+   * anterior mistura tendência com acaso, e o mês corrente, que está
+   * pela metade, finge uma queda que não houve.
+   */
+  const [recorte, setRecorte] = useState(3);
   const [erroSnapshot, setErroSnapshot] = useState<string | null>(null);
   const [netWorth, setNetWorth] = useState<NetWorth | null>(null);
   // Muda quando um saldo é informado: é o que faz o patrimônio recarregar
@@ -41,6 +48,11 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const isMobile = useMediaQuery(MOBILE);
+
+  // Dias do mês de referência, e se ele ainda está correndo.
+  const diasDoMes = new Date(year, month, 0).getDate();
+  const mesEmAndamento =
+    today.getFullYear() === year && today.getMonth() + 1 === month && today.getDate() < diasDoMes;
 
   useEffect(() => {
     let active = true;
@@ -74,7 +86,7 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
     setErroSnapshot(null);
 
     api
-      .snapshot({ month: referencia, months: janela })
+      .snapshot({ month: referencia, months: janela, trendMonths: recorte })
       .then((result) => {
         if (active) setSnapshot(result);
       })
@@ -90,7 +102,7 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
     return () => {
       active = false;
     };
-  }, [year, month, janela]);
+  }, [year, month, janela, recorte]);
 
   useEffect(() => {
     let active = true;
@@ -325,17 +337,45 @@ export function Overview({ onDrill }: { onDrill: (drill: Drill) => void }): Reac
         </div>
 
         <div className="card">
-          <h2 className="card-title">
-            {janela > 1
-              ? `${MONTHS[month - 1]} comparado à média dos últimos ${janela} meses`
-              : `Despesas de ${MONTHS[month - 1]}`}
-          </h2>
+          <div className="card-head">
+            <h2 className="card-title">
+              {recorte > 1
+                ? `Últimos ${recorte} meses contra os ${recorte} anteriores`
+                : janela > 1
+                  ? `${MONTHS[month - 1]} comparado à média dos últimos ${janela} meses`
+                  : `Despesas de ${MONTHS[month - 1]}`}
+            </h2>
+            <select
+              className="card-control"
+              value={recorte}
+              onChange={(e) => setRecorte(Number(e.target.value))}
+              aria-label="Recorte da comparação por categoria"
+            >
+              <option value={1}>mês contra a média</option>
+              <option value={3}>bloco de 3 meses</option>
+              <option value={6}>bloco de 6 meses</option>
+            </select>
+          </div>
+
+          {/* Um mês que ainda está correndo não se compara com meses
+              fechados: no dia 6, seis dias de gasto viram uma "queda de
+              96%" que nunca aconteceu. */}
+          {mesEmAndamento ? (
+            <p className="card-sub" style={{ marginTop: -6 }}>
+              {MONTHS[month - 1]} ainda está em andamento — {today.getDate()} de {diasDoMes} dias.
+              {recorte === 1
+                ? ' Comparar com meses fechados exagera a queda; um bloco maior dilui isso.'
+                : ' O bloco recente inclui esses dias parciais.'}
+            </p>
+          ) : null}
+
           {erroSnapshot ? (
             <div className="notice error">{erroSnapshot}</div>
           ) : snapshot ? (
             <TrendList
               trends={snapshot.trends}
               canCompare={snapshot.canCompare}
+              trendMonths={snapshot.trendMonths}
               onDrill={drillDoMes}
             />
           ) : (

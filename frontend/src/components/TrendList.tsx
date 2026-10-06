@@ -8,11 +8,14 @@ const MINIMO_RELEVANTE = 10;
 export function TrendList({
   trends,
   canCompare = true,
+  trendMonths = 1,
   onDrill,
 }: {
   trends: CategoryTrend[];
   /** Falso numa janela de um mês: a média seria o próprio mês. */
   canCompare?: boolean;
+  /** Tamanho do bloco comparado — muda o que os números significam. */
+  trendMonths?: number;
   onDrill?: (drill: Omit<Drill, 'from' | 'to' | 'origem'>) => void;
 }): ReactNode {
   // "Nada variou" e "não dá para comparar" são coisas diferentes, e a
@@ -60,7 +63,11 @@ export function TrendList({
             {trend.changePercent}%
           </span>
           <span className="rec-meta">
-            {money(trend.currentCents)} neste mês · média de {money(trend.averageCents)}
+            {trendMonths > 1
+              ? `${money(trend.currentCents)} nos últimos ${trendMonths} meses · ${money(
+                  trend.baselineCents,
+                )} nos ${trendMonths} anteriores`
+              : `${money(trend.currentCents)} neste mês · média de ${money(trend.baselineCents)}`}
           </span>
         </div>
       ))}

@@ -203,8 +203,10 @@ export interface RecurringItem {
 export interface CategoryTrend {
   categoryId: string | null;
   name: string;
+  /** O lado recente: o mês de referência, ou a soma do bloco. */
   currentCents: number;
-  averageCents: number;
+  /** Contra o que se compara: média dos anteriores, ou o bloco anterior. */
+  baselineCents: number;
   changePercent: number;
   series: { month: string; expenseCents: number }[];
 }
@@ -219,6 +221,8 @@ export interface Snapshot {
   /** Uma janela de um mês dá totais, mas não comparação nem recorrência. */
   canCompare: boolean;
   canDetectRecurrence: boolean;
+  /** Tamanho do bloco comparado nas tendências, em meses. */
+  trendMonths: number;
   fixedMonthlyCents: number;
   variableMonthlyCents: number;
   subscriptions: RecurringItem[];

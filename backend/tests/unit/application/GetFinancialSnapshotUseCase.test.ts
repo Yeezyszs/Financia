@@ -78,7 +78,7 @@ describe('GetFinancialSnapshotUseCase', () => {
 
     expect(alimentacao).toMatchObject({
       currentCents: 150000,
-      averageCents: 100000,
+      baselineCents: 100000,
       changePercent: 50,
     });
   });
@@ -142,5 +142,106 @@ describe('GetFinancialSnapshotUseCase', () => {
     expect(snapshot.expense.monthlyAverageCents).toBe(100000);
     expect(snapshot.fixedMonthlyCents).toBe(5590);
     expect(snapshot.variableMonthlyCents).toBe(100000 - 5590);
+  });
+});
+
+/**
+ * A comparação padrão é "este mês contra a média dos anteriores", e ela
+ * mente quando o mês de referência ainda está correndo: no dia 6, seis
+ * dias de gasto contra meses fechados viram uma queda de 96% que não
+ * aconteceu. O recorte por bloco existe para isso — períodos do mesmo
+ * tamanho, comparáveis entre si.
+ */
+describe('recorte da comparação por categoria', () => {
+  const ponto = (month: string, categoryId: string, expenseCents: number): CategoryMonthPoint => ({
+    month,
+    categoryId,
+    incomeCents: 0,
+    expenseCents,
+    count: 1,
+  });
+
+  // Abril a junho: R$ 300 por mês. Julho a setembro: R$ 150 por mês.
+  // Outubro mal começou e tem R$ 10.
+  const serie = [
+    ponto('2026-04', 'cat-food', 30000),
+    ponto('2026-05', 'cat-food', 30000),
+    ponto('2026-06', 'cat-food', 30000),
+    ponto('2026-07', 'cat-food', 15000),
+    ponto('2026-08', 'cat-food', 15000),
+    ponto('2026-09', 'cat-food', 15000),
+    ponto('2026-10', 'cat-food', 1000),
+  ];
+
+  it('sem recorte, o mês pela metade parece um colapso de gasto', async () => {
+    const useCase = new GetFinancialSnapshotUseCase(repo(serie, []), categorias);
+
+    const snapshot = await useCase.execute({ userId: USER_ID, referenceMonth: '2026-10' });
+    const food = snapshot.trends.find((t) => t.categoryId === 'cat-food');
+
+    expect(food?.currentCents).toBe(1000);
+    expect(food?.changePercent).toBeLessThan(-90);
+  });
+
+  it('com bloco de três meses, compara trimestre contra trimestre', async () => {
+    const useCase = new GetFinancialSnapshotUseCase(repo(serie, []), categorias);
+
+    const snapshot = await useCase.execute({
+      userId: USER_ID,
+      referenceMonth: '2026-10',
+      months: 6,
+      trendMonths: 3,
+    });
+    const food = snapshot.trends.find((t) => t.categoryId === 'cat-food');
+
+    // ago+set+out contra mai+jun+jul
+    expect(food?.currentCents).toBe(15000 + 15000 + 1000);
+    expect(food?.baselineCents).toBe(30000 + 30000 + 15000);
+    expect(food?.changePercent).toBe(-59);
+    expect(snapshot.trendMonths).toBe(3);
+  });
+
+  it('busca o histórico que o bloco exige, mesmo além da janela pedida', async () => {
+    // Janela de 3 meses com bloco de 3 precisa de 6 meses de série.
+    const useCase = new GetFinancialSnapshotUseCase(repo(serie, []), categorias);
+
+    const snapshot = await useCase.execute({
+      userId: USER_ID,
+      referenceMonth: '2026-10',
+      months: 3,
+      trendMonths: 3,
+    });
+    const food = snapshot.trends.find((t) => t.categoryId === 'cat-food');
+
+    expect(food?.baselineCents).toBe(75000);
+  });
+
+  it('mudar o recorte não mexe nos totais da janela', async () => {
+    const useCase = new GetFinancialSnapshotUseCase(repo(serie, []), categorias);
+    const comum = { userId: USER_ID, referenceMonth: '2026-10', months: 3 };
+
+    const sem = await useCase.execute(comum);
+    const com = await useCase.execute({ ...comum, trendMonths: 3 });
+
+    // ago + set + out, e nada de maio ou junho entrando pela porta dos fundos.
+    expect(sem.expense.totalCents).toBe(31000);
+    expect(com.expense.totalCents).toBe(sem.expense.totalCents);
+  });
+
+  it('bloco maior que o histórico compara contra o que existe', async () => {
+    const curto = [ponto('2026-09', 'cat-food', 15000), ponto('2026-10', 'cat-food', 1000)];
+    const useCase = new GetFinancialSnapshotUseCase(repo(curto, []), categorias);
+
+    const snapshot = await useCase.execute({
+      userId: USER_ID,
+      referenceMonth: '2026-10',
+      trendMonths: 3,
+    });
+    const food = snapshot.trends.find((t) => t.categoryId === 'cat-food');
+
+    expect(food?.currentCents).toBe(16000);
+    // Nada nos três meses anteriores: 0% em vez de um "+100%" inventado.
+    expect(food?.baselineCents).toBe(0);
+    expect(food?.changePercent).toBe(0);
   });
 });

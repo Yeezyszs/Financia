@@ -8,11 +8,18 @@ import type { TransactionRepository } from '../../ports/repositories/Transaction
 export interface CategoryTrend {
   categoryId: string | null;
   name: string;
-  /** Gasto no mês de referência. */
+  /**
+   * O lado recente da comparação: o gasto do mês de referência quando o
+   * recorte é de um mês, ou a soma do bloco quando é maior.
+   */
   currentCents: number;
-  /** Média dos meses anteriores da janela, excluindo o mês de referência. */
-  averageCents: number;
-  /** Variação percentual contra a média. Positivo = gastou mais. */
+  /**
+   * O lado contra o qual se compara: a média dos meses anteriores da
+   * janela (recorte de um mês) ou a soma do bloco imediatamente
+   * anterior, do mesmo tamanho.
+   */
+  baselineCents: number;
+  /** Variação percentual contra a base. Positivo = gastou mais. */
   changePercent: number;
   /** Série mensal, do mais antigo ao mais recente. */
   series: { month: string; expenseCents: number }[];
@@ -40,6 +47,8 @@ export interface FinancialSnapshot {
    */
   canCompare: boolean;
   canDetectRecurrence: boolean;
+  /** Tamanho do bloco comparado nas tendências, em meses. */
+  trendMonths: number;
   /** Soma mensal das assinaturas — o gasto que existe mesmo parado. */
   fixedMonthlyCents: number;
   variableMonthlyCents: number;
@@ -58,6 +67,16 @@ function monthsBefore(referenceMonth: string, months: number): string {
   const month = Number(referenceMonth.slice(5, 7));
   const date = new Date(Date.UTC(year, month - 1 - months, 1));
   return date.toISOString().slice(0, 10);
+}
+
+/** Os `quantos` meses que terminam em `mesFinal`, do mais antigo ao mais novo. */
+function blocoDeMeses(mesFinal: string, quantos: number): string[] {
+  const ano = Number(mesFinal.slice(0, 4));
+  const mes = Number(mesFinal.slice(5, 7));
+  return Array.from({ length: quantos }, (_, i) => {
+    const d = new Date(Date.UTC(ano, mes - 1 - (quantos - 1 - i), 1));
+    return d.toISOString().slice(0, 7);
+  });
 }
 
 function lastDayOf(month: string): string {
@@ -85,16 +104,33 @@ export class GetFinancialSnapshotUseCase {
     referenceMonth: string;
     /** Tamanho da janela analisada, em meses. */
     months?: number;
+    /**
+     * Tamanho do bloco comparado nas tendências. Com 1, o mês de
+     * referência é comparado à média dos anteriores. Acima disso, o
+     * bloco é comparado ao bloco imediatamente anterior do mesmo
+     * tamanho — que é o que responde se o gasto subiu de verdade, sem
+     * um mês atípico (ou pela metade) mandando na conclusão.
+     */
+    trendMonths?: number;
   }): Promise<FinancialSnapshot> {
     const months = input.months ?? 6;
+    const trendMonths = Math.max(input.trendMonths ?? 1, 1);
     const from = monthsBefore(input.referenceMonth, months - 1);
     const to = lastDayOf(input.referenceMonth);
 
-    const [series, rawTransactions, categoryList] = await Promise.all([
-      this.transactions.categorySeries(input.userId, from, to),
+    // Comparar blocos exige o dobro do bloco em histórico, que pode
+    // passar da janela pedida. A série vem mais larga para a tendência,
+    // e tudo o mais continua lendo só a janela — mudar o recorte da
+    // comparação não pode mexer nos totais do período.
+    const fromSerie = monthsBefore(input.referenceMonth, Math.max(months, trendMonths * 2) - 1);
+
+    const [serieCompleta, rawTransactions, categoryList] = await Promise.all([
+      this.transactions.categorySeries(input.userId, fromSerie, to),
       this.transactions.listForAnalysis(input.userId, from, to),
       this.categories.listByUser(input.userId),
     ]);
+
+    const series = serieCompleta.filter((ponto) => ponto.month >= from.slice(0, 7));
 
     const categoryName = new Map(categoryList.map((c) => [c.id, c.name]));
     const nomeDe = (id: string | null) => (id ? (categoryName.get(id) ?? null) : null);
@@ -105,6 +141,10 @@ export class GetFinancialSnapshotUseCase {
     // fixo" da pessoa.
     const aporte = new Set(categoryList.filter((c) => c.isSaving).map((c) => c.id));
     const semAporte = series.filter((ponto) => !ponto.categoryId || !aporte.has(ponto.categoryId));
+    // A tendência enxerga o histórico mais largo; o resto, só a janela.
+    const semAporteCompleto = serieCompleta.filter(
+      (ponto) => !ponto.categoryId || !aporte.has(ponto.categoryId),
+    );
     const gastoAnalisavel = rawTransactions.filter(
       (t) => !t.categoryId || !aporte.has(t.categoryId),
     );
@@ -150,7 +190,7 @@ export class GetFinancialSnapshotUseCase {
 
     // ---- tendência por categoria
     const porCategoria = new Map<string, { month: string; expenseCents: number }[]>();
-    for (const ponto of semAporte) {
+    for (const ponto of semAporteCompleto) {
       if (ponto.expenseCents === 0) continue;
       const chave = ponto.categoryId ?? 'sem-categoria';
       const lista = porCategoria.get(chave) ?? [];
@@ -158,24 +198,47 @@ export class GetFinancialSnapshotUseCase {
       porCategoria.set(chave, lista);
     }
 
+    // Os dois blocos comparados, quando o recorte é maior que um mês.
+    const blocoRecente = new Set(blocoDeMeses(input.referenceMonth, trendMonths));
+    const blocoAnterior = new Set(
+      blocoDeMeses(monthsBefore(input.referenceMonth, trendMonths).slice(0, 7), trendMonths),
+    );
+
     const trends: CategoryTrend[] = [];
     for (const [chave, pontos] of porCategoria) {
       const ordenados = [...pontos].sort((a, b) => a.month.localeCompare(b.month));
-      const atual = ordenados.find((p) => p.month === input.referenceMonth)?.expenseCents ?? 0;
-      const anteriores = ordenados.filter((p) => p.month < input.referenceMonth);
-      const media =
-        anteriores.length > 0
-          ? Math.round(anteriores.reduce((s, p) => s + p.expenseCents, 0) / anteriores.length)
-          : 0;
+      const somaDe = (meses: Set<string>) =>
+        ordenados.filter((p) => meses.has(p.month)).reduce((s, p) => s + p.expenseCents, 0);
+
+      let atual: number;
+      let base: number;
+
+      if (trendMonths > 1) {
+        // Bloco contra bloco: dois períodos do mesmo tamanho, somados.
+        // Mês sem gasto na categoria entra como zero, e é isso mesmo —
+        // dividir só pelos meses em que houve gasto inflaria a base de
+        // quem gasta de vez em quando.
+        atual = somaDe(blocoRecente);
+        base = somaDe(blocoAnterior);
+      } else {
+        atual = ordenados.find((p) => p.month === input.referenceMonth)?.expenseCents ?? 0;
+        const anteriores = ordenados.filter(
+          (p) => p.month < input.referenceMonth && p.month >= from.slice(0, 7),
+        );
+        base =
+          anteriores.length > 0
+            ? Math.round(anteriores.reduce((s, p) => s + p.expenseCents, 0) / anteriores.length)
+            : 0;
+      }
 
       trends.push({
         categoryId: chave === 'sem-categoria' ? null : chave,
         name: chave === 'sem-categoria' ? 'Sem categoria' : (nomeDe(chave) ?? 'Sem categoria'),
         currentCents: atual,
-        averageCents: media,
+        baselineCents: base,
         // Sem histórico não há variação a declarar: 0 é mais honesto que
         // um "+100%" que só diz que o mês passado não existia.
-        changePercent: media > 0 ? Math.round(((atual - media) / media) * 100) : 0,
+        changePercent: base > 0 ? Math.round(((atual - base) / base) * 100) : 0,
         series: ordenados,
       });
     }
@@ -210,8 +273,9 @@ export class GetFinancialSnapshotUseCase {
       },
       savingRatePercent:
         totalIncome > 0 ? Math.round(((totalIncome - totalExpense) / totalIncome) * 100) : null,
-      canCompare: months >= 2,
+      canCompare: trendMonths > 1 || months >= 2,
       canDetectRecurrence: months >= 3,
+      trendMonths,
       fixedMonthlyCents,
       variableMonthlyCents: Math.max(expenseMonthlyAverage - fixedMonthlyCents, 0),
       monthlySeries,

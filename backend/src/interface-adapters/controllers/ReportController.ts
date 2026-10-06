@@ -38,6 +38,9 @@ const snapshotSchema = z.object({
   // 1 é um recorte legítimo: "só este mês". O que ele não permite é
   // comparar nem detectar recorrência, e disso quem cuida é a resposta.
   months: z.coerce.number().int().min(1).max(24).optional(),
+  // O recorte da comparação por categoria, independente da janela: dá
+  // para olhar doze meses de recorrência e comparar blocos de três.
+  trendMonths: z.coerce.number().int().min(1).max(12).optional(),
 });
 
 export class ReportController {
@@ -64,6 +67,7 @@ export class ReportController {
         userId: req.userId,
         referenceMonth: query.month ?? currentMonthRange().from.slice(0, 7),
         ...(query.months ? { months: query.months } : {}),
+        ...(query.trendMonths ? { trendMonths: query.trendMonths } : {}),
       });
       res.json({ data });
     } catch (error) {
@@ -100,6 +104,7 @@ export class ReportController {
         userId: req.userId,
         referenceMonth: query.month ?? currentMonthRange().from.slice(0, 7),
         ...(query.months ? { months: query.months } : {}),
+        ...(query.trendMonths ? { trendMonths: query.trendMonths } : {}),
       });
 
       res.type('text/markdown; charset=utf-8').send(snapshotToMarkdown(snapshot));

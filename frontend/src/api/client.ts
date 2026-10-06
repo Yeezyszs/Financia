@@ -165,7 +165,7 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  snapshot: (query: { month?: string; months?: number } = {}) =>
+  snapshot: (query: { month?: string; months?: number; trendMonths?: number } = {}) =>
     request<Snapshot>(`/reports/snapshot${toQueryString(query)}`),
 
   /**

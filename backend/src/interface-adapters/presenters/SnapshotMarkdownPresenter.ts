@@ -157,18 +157,23 @@ export function snapshotToMarkdown(snapshot: FinancialSnapshot): string {
 
   const tendencias = snapshot.trends.filter((t) => t.currentCents > 0).slice(0, 12);
   if (tendencias.length > 0) {
+    const bloco = snapshot.trendMonths > 1;
     linhas.push(
-      '## Despesas por categoria neste mês',
+      bloco
+        ? `## Despesas por categoria: últimos ${snapshot.trendMonths} meses contra os ${snapshot.trendMonths} anteriores`
+        : '## Despesas por categoria neste mês',
       '',
       ...(snapshot.canCompare
         ? [
-            '| Categoria | Este mês | Média dos meses anteriores | Variação |',
+            bloco
+              ? `| Categoria | Últimos ${snapshot.trendMonths} meses | ${snapshot.trendMonths} meses anteriores | Variação |`
+              : '| Categoria | Este mês | Média dos meses anteriores | Variação |',
             '| --- | ---: | ---: | ---: |',
             ...tendencias.map((t) => {
               const variacao =
-                t.averageCents > 0 ? `${t.changePercent > 0 ? '+' : ''}${t.changePercent}%` : '—';
+                t.baselineCents > 0 ? `${t.changePercent > 0 ? '+' : ''}${t.changePercent}%` : '—';
               return (
-                `| ${t.name} | ${reais(t.currentCents)} | ${reais(t.averageCents)} |` +
+                `| ${t.name} | ${reais(t.currentCents)} | ${reais(t.baselineCents)} |` +
                 ` ${variacao} |`
               );
             }),
