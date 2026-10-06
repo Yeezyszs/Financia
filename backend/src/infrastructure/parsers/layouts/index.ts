@@ -44,12 +44,27 @@ export const C6_CONTA: StatementLayout = {
   institution: 'c6',
   accountType: 'checking',
   label: 'um extrato do C6',
-  dateColumns: [...DATA, 'data do lancamento', 'data movimentacao'],
-  descriptionColumns: [...DESCRICAO, 'descricao do lancamento', 'historico do lancamento'],
+  dateColumns: [...DATA, 'data do lancamento', 'data movimentacao', 'data contabil'],
+  /**
+   * `Título` na frente de `Descrição` de propósito. O extrato do C6 traz
+   * as duas, e quando elas divergem é o título que diz o que aconteceu:
+   * "Pix enviado para GLEICIANE MARAIA" contra "TRANSF ENVIADA PIX",
+   * "PGTO FAT CARTAO C6" contra "Fatura de cartão". A descrição sobra
+   * como complemento, guardada em `raw` para auditoria.
+   */
+  descriptionColumns: [
+    'titulo',
+    ...DESCRICAO,
+    'descricao do lancamento',
+    'historico do lancamento',
+  ],
   amountColumns: ['valor em r', 'valor r', 'valor', 'amount'],
+  inflowColumns: ['entrada r', 'entrada', 'credito', 'valor credito'],
+  outflowColumns: ['saida r', 'saida', 'debito', 'valor debito'],
   extraColumns: {
-    saldo: ['saldo', 'saldo em r'],
+    saldo: ['saldo do dia r', 'saldo', 'saldo em r'],
     tipo: ['tipo', 'tipo de lancamento', 'tipo lancamento'],
+    detalhe: ['descricao'],
   },
 };
 

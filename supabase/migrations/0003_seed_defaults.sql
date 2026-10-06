@@ -65,6 +65,10 @@ begin
       ('salario',          'Salário',        10),
       ('salário',          'Salário',        10),
       ('pagamento de fatura','Transferências', 1),
+      -- O app do C6 abrevia: "PGTO FAT CARTAO C6".
+      ('pgto fat',         'Transferências', 1),
+      ('pagto fatura',     'Transferências', 1),
+      ('pgto fatura',      'Transferências', 1),
       ('pagamento recebido','Transferências', 1)
     ) as r(pattern, category_name, priority)
   loop

@@ -6,7 +6,7 @@ import type {
   ParsedTransactionRow,
   StatementParser,
 } from '../../../application/ports/parsers/StatementParser.js';
-import { columnIndex, detectDelimiter, parseCsv } from './CsvReader.js';
+import { columnIndex, detectDelimiter, parseCsvRows } from './CsvReader.js';
 import { parseStatementDate } from './parseDate.js';
 
 export interface StatementLayout {
@@ -22,6 +22,14 @@ export interface StatementLayout {
    * precisa vir primeiro, senão importaríamos dólar como se fosse real.
    */
   amountColumns: string[];
+  /**
+   * Bancos que publicam entrada e saída em colunas separadas, em vez de
+   * um valor com sinal. O extrato do C6 é assim: `Entrada(R$)` e
+   * `Saída(R$)`, uma zerada em cada linha. Usadas só quando não existe
+   * coluna de valor única.
+   */
+  inflowColumns?: string[];
+  outflowColumns?: string[];
   /** Colunas guardadas em `raw` para auditoria, sem uso no dedupe. */
   extraColumns?: Record<string, string[]>;
   /**
@@ -43,6 +51,9 @@ export interface StatementLayout {
  * seria a mesma lógica copiada quatro vezes, e correção de bug em uma
  * cópia não chega nas outras.
  */
+/** Até onde procurar o cabeçalho antes de desistir. */
+const PREAMBULO_MAXIMO = 15;
+
 export class StatementCsvParser implements StatementParser {
   readonly institution: Institution;
   readonly accountType: AccountType;
@@ -79,16 +90,28 @@ export class StatementCsvParser implements StatementParser {
       const rawDate = celula(at.date);
       const rawDescription = celula(at.description);
       const rawAmount = celula(at.amount);
+      const rawInflow = celula(at.inflow);
+      const rawOutflow = celula(at.outflow);
 
       // Linha em branco no fim do arquivo: ignora em silêncio.
-      if (!rawDate && !rawDescription && !rawAmount) return;
+      if (!rawDate && !rawDescription && !rawAmount && !rawInflow && !rawOutflow) return;
 
       const lineNumber = index + 2; // +1 do cabeçalho, +1 para virar 1-based
-      if (!rawDate || !rawAmount) {
+      if (!rawDate || (!rawAmount && !rawInflow && !rawOutflow)) {
         throw new DomainError(`Linha ${lineNumber}: data ou valor ausente`, 'INVALID_ROW');
       }
 
-      const amount = Money.fromDecimalString(rawAmount);
+      // Entrada e saída em colunas separadas viram um valor com sinal,
+      // que é como o domínio inteiro pensa. A linha preenche uma e zera
+      // a outra, então subtrair dá o sinal certo sem olhar para rótulo.
+      const amount =
+        at.amount === -1
+          ? Money.fromCents(
+              (rawInflow ? Money.fromDecimalString(rawInflow).cents : 0) -
+                (rawOutflow ? Money.fromDecimalString(rawOutflow).cents : 0),
+            )
+          : Money.fromDecimalString(rawAmount);
+
       if (amount.cents === 0) return; // estorno de valor zero não vira transação
 
       const raw: Record<string, string> = {};
@@ -102,7 +125,9 @@ export class StatementCsvParser implements StatementParser {
       parsed.push({
         occurredOn: parseStatementDate(rawDate),
         description: descricaoCom(rawDescription, parcela),
-        amountCents: this.layout.invertSign ? -amount.cents : amount.cents,
+        // `invertSign` vale para fatura, onde a compra é publicada
+        // positiva. Com entrada/saída o sinal já saiu da subtração.
+        amountCents: this.layout.invertSign && at.amount !== -1 ? -amount.cents : amount.cents,
         ...(Object.keys(raw).length > 0 ? { raw } : {}),
       });
     });
@@ -116,44 +141,79 @@ export class StatementCsvParser implements StatementParser {
     };
   }
 
+  /**
+   * Procura o cabeçalho, que nem sempre é a primeira linha.
+   *
+   * O extrato do C6 abre com o nome do banco, a agência, a data de
+   * geração e o período — cinco linhas antes do cabeçalho de verdade.
+   * Fixar "cabeçalho é a linha 1" fazia o parser reclamar de um arquivo
+   * perfeitamente válido, dizendo que a única coluna encontrada era
+   * "EXTRATO DE CONTA CORRENTE C6 BANK".
+   *
+   * O limite de linhas é proposital: passar disso é varrer dados em
+   * busca de cabeçalho, e aí qualquer coisa vira qualquer coisa.
+   */
   private locateColumns(
     content: string,
   ):
     | { ok: true; header: string[]; rows: string[][]; at: ColumnPositions }
     | { ok: false; header: string[] } {
-    const { header, rows } = parseCsv(content, detectDelimiter(content));
+    const linhas = parseCsvRows(content, detectDelimiter(content));
+    const limite = Math.min(linhas.length, PREAMBULO_MAXIMO);
 
-    const date = columnIndex(header, this.layout.dateColumns);
-    const description = columnIndex(header, this.layout.descriptionColumns);
-    const amount = columnIndex(header, this.layout.amountColumns);
+    // Guardado para a mensagem de erro: o melhor palpite de cabeçalho é
+    // o que mais se parece com um, e não a primeira linha do arquivo.
+    let melhorPalpite: { header: string[]; acertos: number } = { header: [], acertos: -1 };
 
-    if (date === -1 || description === -1 || amount === -1) return { ok: false, header };
+    for (let i = 0; i < limite; i += 1) {
+      const header = (linhas[i] ?? []).map((celula) => celula.trim());
 
-    const extras: Record<string, number> = {};
-    for (const [nome, apelidos] of Object.entries(this.layout.extraColumns ?? {})) {
-      const posicao = columnIndex(header, apelidos);
-      if (posicao !== -1) extras[nome] = posicao;
+      const date = columnIndex(header, this.layout.dateColumns);
+      const description = columnIndex(header, this.layout.descriptionColumns);
+      const amount = columnIndex(header, this.layout.amountColumns);
+      const inflow = columnIndex(header, this.layout.inflowColumns ?? []);
+      const outflow = columnIndex(header, this.layout.outflowColumns ?? []);
+
+      // Valor único ou o par entrada/saída: um dos dois tem que existir.
+      const temValor = amount !== -1 || (inflow !== -1 && outflow !== -1);
+      const acertos = [date !== -1, description !== -1, temValor].filter(Boolean).length;
+      if (acertos > melhorPalpite.acertos) melhorPalpite = { header, acertos };
+
+      if (date === -1 || description === -1 || !temValor) continue;
+
+      const extras: Record<string, number> = {};
+      for (const [nome, apelidos] of Object.entries(this.layout.extraColumns ?? {})) {
+        const posicao = columnIndex(header, apelidos);
+        if (posicao !== -1) extras[nome] = posicao;
+      }
+
+      return {
+        ok: true,
+        header,
+        rows: linhas.slice(i + 1),
+        at: {
+          date,
+          description,
+          amount,
+          inflow,
+          outflow,
+          installment: columnIndex(header, this.layout.installmentColumns ?? []),
+          extras,
+        },
+      };
     }
 
-    return {
-      ok: true,
-      header,
-      rows,
-      at: {
-        date,
-        description,
-        amount,
-        installment: columnIndex(header, this.layout.installmentColumns ?? []),
-        extras,
-      },
-    };
+    return { ok: false, header: melhorPalpite.header };
   }
 }
 
 interface ColumnPositions {
   date: number;
   description: number;
+  /** -1 quando o banco separa entrada e saída em duas colunas. */
   amount: number;
+  inflow: number;
+  outflow: number;
   installment: number;
   extras: Record<string, number>;
 }

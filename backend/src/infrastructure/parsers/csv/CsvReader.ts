@@ -8,7 +8,14 @@ export interface CsvTable {
   rows: string[][];
 }
 
-export function parseCsv(content: string, delimiter = ','): CsvTable {
+/**
+ * Todas as linhas com conteúdo, sem decidir qual é o cabeçalho.
+ *
+ * Quem decide é o parser, porque nem todo banco começa o arquivo pelo
+ * cabeçalho: o extrato do C6 abre com título, agência, data de geração
+ * e período, e só na sétima linha útil vem "Data Lançamento,...".
+ */
+export function parseCsvRows(content: string, delimiter = ','): string[][] {
   const withoutBom = content.replace(/^\ufeff/, '');
   const rows: string[][] = [];
   let row: string[] = [];
@@ -52,16 +59,23 @@ export function parseCsv(content: string, delimiter = ','): CsvTable {
     rows.push(row);
   }
 
-  const nonEmpty = rows.filter((r) => r.some((cell) => cell.trim() !== ''));
-  const [header = [], ...body] = nonEmpty;
+  return rows.filter((r) => r.some((cell) => cell.trim() !== ''));
+}
 
+export function parseCsv(content: string, delimiter = ','): CsvTable {
+  const [header = [], ...body] = parseCsvRows(content, delimiter);
   return { header: header.map((h) => h.trim()), rows: body };
 }
 
-/** Detecta o separador olhando a primeira linha (alguns exports usam ;). */
+/**
+ * Detecta o separador (alguns exports usam ;) olhando o arquivo inteiro,
+ * e não a primeira linha: o extrato do C6 começa com "EXTRATO DE CONTA
+ * CORRENTE C6 BANK", uma linha sem separador nenhum, que não decide nada.
+ */
 export function detectDelimiter(content: string): ',' | ';' {
-  const firstLine = content.split('\n', 1)[0] ?? '';
-  return (firstLine.match(/;/g)?.length ?? 0) > (firstLine.match(/,/g)?.length ?? 0) ? ';' : ',';
+  const virgulas = content.match(/,/g)?.length ?? 0;
+  const pontoEVirgula = content.match(/;/g)?.length ?? 0;
+  return pontoEVirgula > virgulas ? ';' : ',';
 }
 
 /**

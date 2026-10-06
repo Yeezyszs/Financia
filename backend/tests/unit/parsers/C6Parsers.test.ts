@@ -20,6 +20,28 @@ const EXTRATO = `Data Lançamento;Descrição;Valor;Saldo
 10/08/2026;PAGAMENTO DE FATURA CARTAO C6;-2350,90;6830,60
 `;
 
+/**
+ * O segundo formato de extrato do C6, o que o app do banco exporta hoje:
+ * cinco linhas de preâmbulo antes do cabeçalho, decimal com ponto,
+ * entrada e saída em colunas separadas, e `Título` ao lado de
+ * `Descrição`. Valores e nomes aqui são inventados — o arquivo que
+ * motivou o teste trazia conta e nomes de pessoas de verdade.
+ */
+const EXTRATO_NOVO = `EXTRATO DE CONTA CORRENTE C6 BANK
+
+Agência: 1 / Conta: 000000000
+Extrato gerado em 06/10/2026 - as 11:04:55
+
+Extrato de 06/09/2026 a 06/10/2026
+
+
+Data Lançamento,Data Contábil,Título,Descrição,Entrada(R$),Saída(R$),Saldo do Dia(R$)
+09/09/2026,09/09/2026,Pix recebido de Fulano de Tal,Pix recebido de Fulano de Tal,65.00,0.00,3.98
+09/09/2026,09/09/2026,Tesouro Direto,IPCA+ 2032,0.00,61.02,3.98
+06/10/2026,06/10/2026,PGTO FAT CARTAO C6,Fatura de cartão,0.00,683.88,219.52
+06/10/2026,06/10/2026,Pix enviado para Beltrano,TRANSF ENVIADA PIX,0.00,1000.00,219.52
+`;
+
 describe('fatura do C6', () => {
   const parser = new StatementCsvParser(C6_CARTAO);
 
@@ -97,5 +119,42 @@ describe('extrato do C6', () => {
   it('lê ponto e vírgula como separador', () => {
     const { rows } = parser.parse(EXTRATO);
     expect(rows).toHaveLength(3);
+  });
+});
+/**
+ * O app do C6 mudou o formato do extrato, e o anterior continua valendo
+ * para quem tem arquivo antigo guardado. Os dois são o mesmo layout.
+ */
+describe('extrato do C6 no formato exportado pelo app', () => {
+  const parser = new StatementCsvParser(C6_CONTA);
+
+  it('acha o cabeçalho depois do preâmbulo', () => {
+    expect(parser.supports(EXTRATO_NOVO)).toBe(true);
+  });
+
+  it('transforma entrada e saída em um valor com sinal', () => {
+    const { rows } = parser.parse(EXTRATO_NOVO);
+
+    expect(rows).toHaveLength(4);
+    expect(rows[0]).toMatchObject({ occurredOn: '2026-09-09', amountCents: 6500 });
+    expect(rows[1]?.amountCents).toBe(-6102);
+    expect(rows[3]?.amountCents).toBe(-100000);
+  });
+
+  it('usa o título, que é onde está o que aconteceu', () => {
+    // "TRANSF ENVIADA PIX" não diz para quem; o título diz.
+    const { rows } = parser.parse(EXTRATO_NOVO);
+
+    expect(rows[3]?.description).toBe('Pix enviado para Beltrano');
+    expect(rows[3]?.raw?.detalhe).toBe('TRANSF ENVIADA PIX');
+  });
+
+  it('não desiste do preâmbulo reclamando da primeira linha', () => {
+    // O erro antigo dizia "Colunas encontradas: EXTRATO DE CONTA
+    // CORRENTE C6 BANK", que não ajudava ninguém a entender nada.
+    const semCabecalho = 'EXTRATO DE CONTA CORRENTE C6 BANK\n\nAgência: 1 / Conta: 000000000\n';
+
+    expect(() => parser.parse(semCabecalho)).toThrow(/Colunas encontradas/);
+    expect(parser.supports(semCabecalho)).toBe(false);
   });
 });
